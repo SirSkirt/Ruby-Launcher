@@ -1,0 +1,12 @@
+{
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Ruby Launcher",
+        "fullscreen": false,
+        "decorations": false
+      }
+    ]
+  }
+}

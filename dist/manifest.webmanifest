@@ -1,0 +1,10 @@
+{
+  "name": "Ruby Launcher",
+  "short_name": "Ruby",
+  "description": "Controller-first Minecraft Java launcher with Microsoft sign-in and vanilla installation.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0e0b0d",
+  "theme_color": "#7b1530",
+  "icons": []
+}

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Ruby Launcher gem mark">
+  <defs>
+    <linearGradient id="rubyFace" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff6b86" />
+      <stop offset="0.42" stop-color="#c5254c" />
+      <stop offset="1" stop-color="#6d1028" />
+    </linearGradient>
+    <linearGradient id="rubySide" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8f1535" />
+      <stop offset="1" stop-color="#390817" />
+    </linearGradient>
+  </defs>
+  <path d="M25 34 46 15h38l20 19 12 30-52 52L12 64z" fill="url(#rubySide)" stroke="#ffd0d9" stroke-width="3" stroke-linejoin="round" />
+  <path d="m25 34 39 2 40-2-16 35-24 47-24-47z" fill="url(#rubyFace)" stroke="#ff8da2" stroke-width="2" stroke-linejoin="round" />
+  <path d="M46 15 25 34l39 2zm38 0 20 19-40 2zM12 64l28 5 24 47zm104 0-28 5-24 47z" fill="#e84465" opacity=".9" />
+  <path d="m46 15 18 21 20-21zM40 69l24-33 24 33z" fill="#ff9bad" opacity=".72" />
+  <path d="M32 29 48 18" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8" />
+</svg>

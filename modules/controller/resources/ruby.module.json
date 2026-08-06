@@ -1,0 +1,9 @@
+{
+  "id": "ruby-controller",
+  "name": "Controller Support",
+  "version": "0.8.4",
+  "loaderApi": 1,
+  "entrypoint": "com.qtech.ruby.modules.controller.RubyControllerModule",
+  "platforms": ["windows", "linux", "android"],
+  "builtIn": true
+}

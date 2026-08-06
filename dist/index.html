@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#7b1530" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="Ruby Launcher - a controller-first Minecraft Java launcher project by QTech Studios."
+    />
+    <link rel="icon" href="./assets/ruby-mark.svg" type="image/svg+xml" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Ruby Launcher</title>
+  </head>
+  <body>
+    <section class="controller-gate" id="controllerGate" aria-labelledby="controllerGateTitle">
+      <div class="gate-glow" aria-hidden="true"></div>
+      <div class="controller-gate-card">
+        <div class="controller-illustration" aria-hidden="true">
+          <svg viewBox="0 0 240 150">
+            <path d="M70 35h100c27 0 48 19 54 47l7 34c3 16-15 27-27 16l-30-27H66l-30 27c-12 11-30 0-27-16l7-34c6-28 27-47 54-47Z" />
+            <path d="M58 68v32M42 84h32" />
+            <circle cx="179" cy="72" r="8" />
+            <circle cx="198" cy="91" r="8" />
+            <circle cx="156" cy="88" r="12" />
+            <circle cx="107" cy="68" r="5" />
+            <circle cx="129" cy="68" r="5" />
+          </svg>
+          <span class="controller-signal signal-one"></span>
+          <span class="controller-signal signal-two"></span>
+          <span class="controller-signal signal-three"></span>
+        </div>
+        <span class="eyebrow">CONTROLLER REQUIRED</span>
+        <h1 id="controllerGateTitle">Connect a controller to start Ruby Launcher</h1>
+        <p>
+          This desktop build is testing the same controller-first interface planned for Android TV.
+          Connect by USB or Bluetooth, then press any controller button.
+        </p>
+        <div class="gate-status" id="controllerGateStatus" aria-live="polite">
+          <span class="status-pulse" aria-hidden="true"></span>
+          <span>Waiting for a gamepad…</span>
+        </div>
+        <div class="gate-help">
+          <span><kbd>A</kbd> Select</span>
+          <span><kbd>B</kbd> Back</span>
+          <span><kbd>LB</kbd><kbd>RB</kbd> Sections</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="app-shell" id="appShell" inert aria-hidden="true">
+      <aside class="sidebar">
+        <div class="brand-lockup" aria-label="Ruby Launcher">
+          <img class="brand-mark" src="./assets/ruby-mark.svg" alt="" />
+          <div>
+            <div class="brand-name">Ruby Launcher</div>
+            <div class="build-label">b2026.21 · GitHub Actions Builds</div>
+          </div>
+        </div>
+
+        <nav class="side-nav" aria-label="Primary navigation">
+          <button class="nav-button is-active" type="button" data-view-target="home">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8v10h-6v-6H9v6H3z" /></svg>
+            <span>Home</span>
+            <kbd>1</kbd>
+          </button>
+          <button class="nav-button" type="button" data-view-target="instances">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v5H4zm0 9h16v5H4zM7 7h.01M7 16h.01" /></svg>
+            <span>Instances</span>
+            <kbd>2</kbd>
+          </button>
+          <button class="nav-button" type="button" data-view-target="versions">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 20h14" /></svg>
+            <span>Versions</span>
+            <kbd>3</kbd>
+          </button>
+          <button class="nav-button" type="button" data-view-target="modpacks">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5zM12 12l8-4.5M12 12 4 7.5M12 12v9" /></svg>
+            <span>Modpacks</span>
+            <kbd>4</kbd>
+          </button>
+          <button class="nav-button" type="button" data-view-target="settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5zM19 13.5l2-1.5-2-1.5-.5-1.3.4-2.4-2.4-.4L15 4l-2 1h-2L9 4 7.5 6.4l-2.4.4.4 2.4L5 10.5 3 12l2 1.5.5 1.3-.4 2.4 2.4.4L9 20l2-1h2l2 1 1.5-2.4 2.4-.4-.4-2.4z" /></svg>
+            <span>Settings</span>
+            <kbd>5</kbd>
+          </button>
+        </nav>
+
+        <div class="sidebar-spacer"></div>
+
+        <section class="controller-card" aria-labelledby="controllerCardTitle">
+          <div class="controller-card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M7 8h10c2.5 0 4.4 1.7 5 4.1l.8 3.3c.5 2.1-2 3.5-3.5 2l-2.4-2.4H7.1l-2.4 2.4c-1.5 1.5-4-.1-3.5-2l.8-3.3C2.6 9.7 4.5 8 7 8Zm0 3v3m-1.5-1.5h3M16 11h.01M18.5 13.5h.01" /></svg>
+          </div>
+          <div>
+            <span id="controllerCardTitle">Controller connected</span>
+            <strong id="controllerName">Gamepad</strong>
+          </div>
+          <span class="connected-dot" aria-label="Connected"></span>
+        </section>
+
+        <p class="sidebar-controls"><kbd>LB</kbd><kbd>RB</kbd> switch section · <kbd>Start</kbd> menu</p>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <div>
+            <span class="eyebrow" id="viewEyebrow">LAUNCHER HOME</span>
+            <h1 id="viewHeading">Good to see you.</h1>
+          </div>
+          <div class="topbar-actions">
+            <button class="account-pill" id="signInButton" type="button">
+              <span class="account-avatar" aria-hidden="true">?</span>
+              <span><strong id="accountPillName">Sign in</strong><small id="accountPillStatus">Microsoft account</small></span>
+            </button>
+            <button class="icon-button" id="openLogsButton" type="button" aria-label="Open launcher log">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg>
+            </button>
+          </div>
+        </header>
+
+        <main class="content" id="mainContent">
+          <section class="view is-active" data-view="home" aria-labelledby="homeTitle">
+            <div class="home-grid">
+              <section class="hero-panel" aria-labelledby="homeTitle">
+                <div class="hero-copy">
+                  <span class="eyebrow">CONTROLLER-FIRST JAVA EDITION</span>
+                  <h2 id="homeTitle">A launcher built for the couch—and tested on the desktop.</h2>
+                  <p>
+                    Ruby Launcher keeps Minecraft instances separate and will eventually carry the same interface to Android TV.
+                  </p>
+                </div>
+                <div class="ruby-orbit" aria-hidden="true">
+                  <img src="./assets/ruby-mark.svg" alt="" />
+                </div>
+              </section>
+
+              <section class="quick-launch-panel" aria-labelledby="quickLaunchTitle">
+                <div class="section-heading-row">
+                  <div>
+                    <span class="eyebrow">QUICK LAUNCH</span>
+                    <h2 id="quickLaunchTitle">Selected instance</h2>
+                  </div>
+                  <button class="text-button" type="button" data-navigate="instances">Manage</button>
+                </div>
+
+                <article class="instance-focus" id="selectedInstanceCard">
+                  <div class="instance-art" aria-hidden="true"><span class="instance-cube"></span></div>
+                  <div class="instance-focus-copy">
+                    <span class="status-chip" id="selectedStatus">Foundation</span>
+                    <h3 id="selectedName">Ruby Test Instance</h3>
+                    <p id="selectedDetails">Minecraft 1.21.1 · No third-party loader</p>
+                  </div>
+                  <button class="round-button" id="instanceMenuButton" type="button" aria-label="Instance options">•••</button>
+                </article>
+
+                <div class="launch-actions">
+                  <button class="primary-button launch-button" id="playButton" data-default-focus type="button">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7z" /></svg>
+                    Play
+                  </button>
+                  <button class="secondary-button" id="prepareButton" type="button">Repair</button>
+                </div>
+                <p class="helper-text" id="launchHint">
+                  Play checks the instance, downloads missing files and Java when needed, then launches Minecraft. Repair performs a deeper hash scan.
+                </p>
+              </section>
+
+              <section class="dashboard-panel account-panel" aria-labelledby="accountTitle">
+                <div class="panel-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 8c0-4-3-6-7-6s-7 2-7 6" /></svg>
+                </div>
+                <div>
+                  <span class="eyebrow">ACCOUNT</span>
+                  <h2 id="accountTitle">No Microsoft account connected</h2>
+                  <p id="accountDescription">Use Microsoft device-code sign-in to connect the account that owns Minecraft: Java Edition.</p>
+                </div>
+                <button class="secondary-button" id="accountSignInButton" type="button">Connect account</button>
+              </section>
+
+              <section class="dashboard-panel status-panel" aria-labelledby="foundationTitle">
+                <div class="section-heading-row">
+                  <div>
+                    <span class="eyebrow">BUILD STATUS</span>
+                    <h2 id="foundationTitle">Foundation systems</h2>
+                  </div>
+                  <span class="build-chip">b2026.21</span>
+                </div>
+                <div class="status-grid">
+                  <article class="status-card"><span class="status-dot is-ready"></span><div><strong>Desktop TV layout</strong><span>Working</span></div></article>
+                  <article class="status-card"><span class="status-dot is-ready"></span><div><strong>Controller navigation</strong><span>Working</span></div></article>
+                  <article class="status-card"><span class="status-dot is-ready"></span><div><strong>Instance profiles</strong><span>Working</span></div></article>
+                  <article class="status-card"><span class="status-dot is-ready"></span><div><strong>Play file check</strong><span>Working</span></div></article>
+                  <article class="status-card"><span class="status-dot is-ready"></span><div><strong>Microsoft sign-in</strong><span>Remember Me</span></div></article>
+                  <article class="status-card"><span class="status-dot is-ready"></span><div><strong>Managed Java runtime</strong><span>Windows</span></div></article>
+                  <article class="status-card"><span class="status-dot is-ready"></span><div><strong>Minecraft process</strong><span>Launch + logs</span></div></article>
+                  <article class="status-card"><span class="status-dot is-testing"></span><div><strong>In-game controller core</strong><span>Direct input · Experimental</span></div></article>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section class="view" data-view="instances" aria-labelledby="instancesTitle">
+            <div class="page-heading">
+              <div>
+                <span class="eyebrow">SEPARATE WORLDS & MODS</span>
+                <h2 id="instancesTitle">Instances</h2>
+                <p>Each profile keeps its own game directory, loader selection and future runtime settings.</p>
+              </div>
+              <button class="primary-icon-button" id="createInstanceButton" data-default-focus type="button" aria-label="Create instance">+</button>
+            </div>
+            <div class="instance-list" id="instanceList" aria-live="polite"></div>
+            <div class="empty-state" id="instanceEmptyState" hidden>
+              <img src="./assets/ruby-mark.svg" alt="" />
+              <h2>No instances yet</h2>
+              <p>Create one to establish its folders and configuration.</p>
+              <button class="primary-button" id="emptyCreateButton" type="button">Create instance</button>
+            </div>
+          </section>
+
+          <section class="view" data-view="versions" aria-labelledby="versionsTitle">
+            <div class="page-heading compact-heading">
+              <div>
+                <span class="eyebrow">INSTALL SOURCES</span>
+                <h2 id="versionsTitle">Versions</h2>
+                <p>Ruby Launcher reads Mojang's live catalog and installs the complete vanilla client, libraries, assets and desktop natives.</p>
+              </div>
+            </div>
+
+            <section class="catalog-panel" aria-labelledby="catalogTitle">
+              <div class="section-heading-row">
+                <div><span class="eyebrow">LIVE MOJANG METADATA</span><h2 id="catalogTitle">Version catalog</h2></div>
+                <button class="secondary-button" id="refreshCatalogButton" data-default-focus type="button">Refresh</button>
+              </div>
+              <div class="catalog-latest-grid">
+                <article><span>Latest release</span><strong id="latestReleaseValue">Loading…</strong></article>
+                <article><span>Latest snapshot</span><strong id="latestSnapshotValue">Loading…</strong></article>
+                <article><span>Catalog status</span><strong id="catalogStatus">Connecting…</strong></article>
+              </div>
+              <div class="catalog-list" id="catalogList" aria-live="polite"></div>
+            </section>
+
+            <div class="versions-grid">
+              <section class="section-block no-top-margin" aria-labelledby="loaderSupportTitle">
+                <div class="section-heading-row"><div><span class="eyebrow">PLANNED ENVIRONMENTS</span><h2 id="loaderSupportTitle">Loader support</h2></div></div>
+                <div class="loader-list">
+                  <article><span class="loader-icon">R</span><div><strong>Ruby base client</strong><p>No third-party mod loader</p></div><span class="status-chip">Core</span></article>
+                  <article><span class="loader-icon">F</span><div><strong>Fabric</strong><p>User-selected Fabric mods</p></div><span class="status-chip muted">Planned</span></article>
+                  <article><span class="loader-icon">Q</span><div><strong>Quilt</strong><p>User-selected Quilt mods</p></div><span class="status-chip muted">Planned</span></article>
+                  <article><span class="loader-icon">N</span><div><strong>NeoForge</strong><p>User-selected NeoForge mods</p></div><span class="status-chip muted">Planned</span></article>
+                  <article><span class="loader-icon">G</span><div><strong>Forge</strong><p>Legacy and current Forge profiles</p></div><span class="status-chip muted">Planned</span></article>
+                </div>
+              </section>
+
+              <section class="section-block no-top-margin manual-profile" aria-labelledby="manualVersionTitle">
+                <span class="eyebrow">INSTALL TARGET</span>
+                <h2 id="manualVersionTitle">Create a vanilla profile</h2>
+                <p>Choose any version ID from the live catalog. After creating it, select the profile and press Play. Use Repair for a deeper SHA-1 verification.</p>
+                <button class="secondary-button full-width" id="manualProfileButton" data-default-focus type="button">Open instance creator</button>
+              </section>
+            </div>
+          </section>
+
+          <section class="view" data-view="modpacks" aria-labelledby="modpacksTitle">
+            <div class="page-heading compact-heading">
+              <div>
+                <span class="eyebrow">PUBLIC MODRINTH CATALOG</span>
+                <h2 id="modpacksTitle">Modpacks</h2>
+                <p>Search Modrinth, choose a pack version, and install it as a separate Ruby profile.</p>
+              </div>
+            </div>
+
+            <section class="catalog-panel modrinth-browser" aria-labelledby="modrinthSearchTitle">
+              <div class="section-heading-row">
+                <div><span class="eyebrow">FIND A PACK</span><h2 id="modrinthSearchTitle">Modrinth search</h2></div>
+                <span class="status-chip muted" id="modrinthStatus">Ready</span>
+              </div>
+              <form class="modrinth-search-row" id="modrinthSearchForm">
+                <label class="field-label stacked" for="modrinthQuery"><span>Search terms</span><input id="modrinthQuery" data-default-focus type="search" placeholder="Fabulously Optimized, Cobblemon…" /></label>
+                <label class="field-label stacked" for="modrinthSort"><span>Sort</span><select id="modrinthSort"><option value="relevance">Relevance</option><option value="downloads">Most downloaded</option><option value="updated">Recently updated</option><option value="newest">Newest</option></select></label>
+                <button class="primary-button" id="modrinthSearchButton" type="submit">Search Modrinth</button>
+              </form>
+              <p class="field-help">Ruby uses Modrinth's public API. No Modrinth account or API key is required for searching and installing public packs.</p>
+            </section>
+
+            <div class="modrinth-results" id="modrinthResults" aria-live="polite"></div>
+            <div class="empty-state compact-empty" id="modrinthEmptyState">
+              <span class="loader-icon">M</span>
+              <h2>Search for a modpack</h2>
+              <p>Results will appear here with their supported Minecraft versions and loaders.</p>
+            </div>
+          </section>
+
+          <section class="view" data-view="settings" aria-labelledby="settingsTitle">
+            <div class="page-heading compact-heading">
+              <div>
+                <span class="eyebrow">DEVICE & RUNTIME</span>
+                <h2 id="settingsTitle">Settings</h2>
+                <p>Defaults saved here apply when a new instance is created.</p>
+              </div>
+            </div>
+
+            <form id="settingsForm" class="settings-layout">
+              <section class="settings-group" aria-labelledby="runtimeSettingsTitle">
+                <h2 id="runtimeSettingsTitle">Runtime defaults</h2>
+                <label class="field-label" for="memoryRange"><span>Memory allocation</span><strong id="memoryValue">2048 MB</strong></label>
+                <input id="memoryRange" name="memoryMb" data-default-focus type="range" min="768" max="8192" step="256" value="2048" />
+                <p class="field-help">New profiles start with this maximum. Existing profiles keep their own memory setting.</p>
+
+                <label class="field-label stacked" for="javaRuntime"><span>Preferred Java runtime</span><select id="javaRuntime" name="javaRuntime"><option value="automatic">Automatic by Minecraft version</option><option value="java8">Java 8</option><option value="java17">Java 17</option><option value="java21">Java 21</option><option value="java25">Java 25</option></select></label>
+                <label class="field-label stacked" for="renderer"><span>Renderer preference</span><select id="renderer" name="renderer"><option value="automatic">Automatic device selection</option><option value="zink">Zink</option><option value="angle">ANGLE</option><option value="gl4es">GL4ES</option></select></label>
+              </section>
+
+              <section class="settings-group" aria-labelledby="controllerSettingsTitle">
+                <h2 id="controllerSettingsTitle">Controller</h2>
+                <label class="field-label" for="controllerDeadzone"><span>Stick deadzone</span><strong id="deadzoneValue">22%</strong></label>
+                <input id="controllerDeadzone" name="controllerDeadzone" type="range" min="0.10" max="0.50" step="0.01" value="0.22" />
+                <p class="field-help">Raise this if a worn stick moves focus by itself.</p>
+                <label class="switch-row"><span><strong>In-game Controller Support</strong><small>Global master switch. Individual profiles can also turn it off.</small></span><input type="checkbox" id="controllerSupportEnabled" name="controllerSupportEnabled" checked /></label>
+                <label class="switch-row"><span><strong>Controller vibration</strong><small>Use a short pulse for navigation and actions when supported</small></span><input type="checkbox" id="controllerVibration" name="controllerVibration" checked /></label>
+                <div class="controller-test-row">
+                  <div><span>Active controller</span><strong id="settingsControllerName">Gamepad</strong></div>
+                  <button class="secondary-button" id="testVibrationButton" type="button">Test vibration</button>
+                </div>
+              </section>
+
+
+              <section class="settings-group" aria-labelledby="launcherSettingsTitle">
+                <h2 id="launcherSettingsTitle">Launcher</h2>
+                <label class="switch-row"><span><strong>Launcher fullscreen</strong><small>Fill the display with Ruby Launcher's controller-first interface</small></span><input type="checkbox" id="launcherFullscreen" name="launcherFullscreen" checked /></label>
+                <label class="switch-row"><span><strong>Controller prompt on startup</strong><small>Require a controller before opening the launcher interface</small></span><input type="checkbox" id="controllerPromptOnStart" name="controllerPromptOnStart" checked /></label>
+                <label class="switch-row"><span><strong>Minimize to system tray while Minecraft runs</strong><small>Keep Ruby running in the tray, then restore it when Minecraft closes</small></span><input type="checkbox" id="hideLauncherWhilePlaying" name="hideLauncherWhilePlaying" checked /></label>
+                <label class="switch-row"><span><strong>Keep screen awake</strong><small>Useful during downloads and game startup</small></span><input type="checkbox" id="keepScreenOn" name="keepScreenOn" checked /></label>
+                <label class="switch-row"><span><strong>Show detailed logs</strong><small>Keep backend messages visible in the launcher</small></span><input type="checkbox" id="showLogs" name="showLogs" checked /></label>
+                <label class="switch-row"><span><strong>Allow cellular downloads</strong><small>Used by the future Android downloader policy</small></span><input type="checkbox" id="allowCellular" name="allowCellular" /></label>
+              </section>
+
+              <div class="settings-submit">
+                <button class="primary-button full-width" type="submit">Save settings</button>
+                <section class="about-panel"><img src="./assets/ruby-mark.svg" alt="" /><div><strong>Ruby Launcher b2026.21</strong><span>QTech Studios · Tauri 2 + JavaScript</span></div></section>
+              </div>
+            </form>
+          </section>
+        </main>
+
+        <footer class="controller-footer" aria-label="Controller shortcuts">
+          <span><kbd>A</kbd> Select</span>
+          <span><kbd>B</kbd> Back</span>
+          <span><kbd>LB</kbd><kbd>RB</kbd> Change section</span>
+          <span><kbd>Start</kbd> Menu</span>
+          <span><kbd>Start</kbd><kbd>RB</kbd> Logs</span>
+        </footer>
+      </div>
+    </div>
+
+    <dialog class="modal-dialog" id="instanceDialog">
+      <form method="dialog" class="modal-card" id="instanceForm">
+        <div class="modal-header">
+          <div><span class="eyebrow">NEW PROFILE</span><h2>Create instance</h2></div>
+          <button class="icon-button" value="cancel" type="submit" aria-label="Close">×</button>
+        </div>
+        <div class="form-grid">
+          <label class="field-label stacked" for="instanceName"><span>Instance name</span><input id="instanceName" name="name" type="text" maxlength="48" value="Ruby Test Instance" required /></label>
+          <label class="field-label stacked" for="minecraftVersion"><span>Minecraft version ID</span><input id="minecraftVersion" name="minecraftVersion" type="text" maxlength="40" value="1.21.1" list="versionOptions" required /><datalist id="versionOptions"></datalist></label>
+          <label class="field-label stacked form-span" for="loaderType"><span>Third-party loader</span><select id="loaderType" name="loader"><option value="none">None</option><option value="fabric">Fabric</option><option value="quilt">Quilt</option><option value="neoforge">NeoForge</option><option value="forge">Forge</option></select></label>
+        </div>
+        <p class="field-help">Vanilla profiles can be installed now. Third-party loader installers are not connected yet.</p>
+        <div class="modal-actions"><button class="secondary-button" value="cancel" type="submit">Cancel</button><button class="primary-button" id="confirmCreateButton" value="default" type="submit">Create</button></div>
+      </form>
+    </dialog>
+
+    <dialog class="modal-dialog wide-dialog" id="profileDialog">
+      <form method="dialog" class="modal-card" id="profileForm">
+        <div class="modal-header">
+          <div><span class="eyebrow">PROFILE SETTINGS</span><h2 id="profileDialogTitle">Edit profile</h2></div>
+          <button class="icon-button" value="cancel" type="submit" aria-label="Close">×</button>
+        </div>
+        <input id="profileInstanceId" type="hidden" />
+        <div class="profile-settings-grid">
+          <section class="profile-settings-panel">
+            <label class="field-label stacked" for="profileName"><span>Profile name</span><input id="profileName" type="text" maxlength="48" required /></label>
+            <label class="field-label" for="profileMemory"><span>Maximum memory</span><strong id="profileMemoryValue">2048 MB</strong></label>
+            <input id="profileMemory" type="range" min="768" max="16384" step="256" value="2048" />
+            <label class="field-label" for="profileInitialMemory"><span>Starting memory</span><strong id="profileInitialMemoryValue">512 MB</strong></label>
+            <input id="profileInitialMemory" type="range" min="256" max="4096" step="256" value="512" />
+            <label class="field-label stacked" for="profileJavaRuntime"><span>Java runtime</span><select id="profileJavaRuntime"><option value="automatic">Automatic for Minecraft</option><option value="java8">Java 8</option><option value="java17">Java 17</option><option value="java21">Java 21</option><option value="java25">Java 25</option></select></label>
+            <label class="field-label stacked" for="profileRenderer"><span>Renderer preference</span><small>Reserved for Ruby's future mobile graphics layer</small><select id="profileRenderer"><option value="automatic">Automatic</option><option value="zink">Zink</option><option value="angle">ANGLE</option><option value="gl4es">GL4ES</option></select></label>
+          </section>
+          <section class="profile-settings-panel">
+            <label class="field-label stacked" for="profileJvmPreset"><span>JVM tuning</span><select id="profileJvmPreset"><option value="standard">Standard Java defaults</option><option value="balanced">Balanced gameplay</option><option value="low-memory">Lower memory pressure</option><option value="performance">Performance</option></select></label>
+            <label class="switch-row"><span><strong>In-game Controller Support</strong><small>Still obeys the global master switch in Launcher Settings</small></span><input type="checkbox" id="profileControllerSupport" checked /></label>
+            <label class="switch-row"><span><strong>Start Minecraft fullscreen</strong><small>Turn off to use the profile resolution below</small></span><input type="checkbox" id="profileGameFullscreen" checked /></label>
+            <div class="resolution-row">
+              <label class="field-label stacked" for="profileResolutionWidth"><span>Width</span><input id="profileResolutionWidth" type="number" min="640" max="7680" step="1" value="1280" /></label>
+              <label class="field-label stacked" for="profileResolutionHeight"><span>Height</span><input id="profileResolutionHeight" type="number" min="480" max="4320" step="1" value="720" /></label>
+            </div>
+            <div class="jvm-preview"><span>Generated JVM arguments</span><code id="profileJvmPreview">-Xms512M -Xmx2048M</code></div>
+          </section>
+        </div>
+        <div class="modal-actions"><button class="secondary-button" value="cancel" type="submit">Cancel</button><button class="primary-button" id="saveProfileButton" value="default" type="submit">Save profile</button></div>
+      </form>
+    </dialog>
+
+    <dialog class="modal-dialog" id="modrinthDialog">
+      <section class="modal-card modrinth-dialog-card">
+        <div class="modal-header">
+          <div><span class="eyebrow">MODRINTH MODPACK</span><h2 id="modrinthDialogTitle">Choose a version</h2></div>
+          <button class="icon-button" id="closeModrinthDialog" type="button" aria-label="Close">×</button>
+        </div>
+        <div class="modrinth-dialog-summary">
+          <img id="modrinthDialogIcon" alt="" />
+          <div><p id="modrinthDialogDescription"></p><span id="modrinthDialogAuthor"></span></div>
+        </div>
+        <label class="field-label stacked" for="modrinthVersionSelect"><span>Pack version</span><select id="modrinthVersionSelect"></select></label>
+        <label class="switch-row"><span><strong>Enable in-game Controller Support</strong><small>This can be changed later in the installed profile</small></span><input type="checkbox" id="modrinthControllerSupport" checked /></label>
+        <p class="field-help" id="modrinthVersionDetails">Choose a version to see its Minecraft version and loader.</p>
+        <div class="modal-actions"><button class="secondary-button" id="cancelModrinthInstall" type="button">Cancel</button><button class="primary-button" id="installModrinthPack" type="button">Install modpack</button></div>
+      </section>
+    </dialog>
+
+    <dialog class="modal-dialog" id="authDialog">
+      <section class="modal-card auth-card">
+        <div class="modal-header">
+          <div><span class="eyebrow">MICROSOFT DEVICE CODE</span><h2>Sign in to Minecraft</h2></div>
+          <button class="icon-button" id="closeAuthButton" type="button" aria-label="Close">×</button>
+        </div>
+        <p id="authInstructions">Open the Microsoft page and enter this code.</p>
+        <div class="device-code" id="authUserCode">--------</div>
+        <p class="verification-uri" id="authVerificationUri">https://microsoft.com/devicelogin</p>
+        <div class="auth-status" id="authStatus" aria-live="polite">Waiting to start…</div>
+        <div class="modal-actions">
+          <button class="secondary-button" id="cancelAuthButton" type="button">Cancel</button>
+          <button class="primary-button" id="openAuthPageButton" type="button">Open Microsoft page</button>
+        </div>
+      </section>
+    </dialog>
+
+    <dialog class="modal-dialog" id="installDialog">
+      <section class="modal-card install-card">
+        <div class="modal-header">
+          <div><span class="eyebrow">PLAY PREPARATION / REPAIR</span><h2 id="installTitle">Preparing Minecraft</h2></div>
+          <span class="status-chip" id="installPercent">0%</span>
+        </div>
+        <p id="installStage">Preparing metadata…</p>
+        <div class="progress-track" aria-hidden="true"><span id="installProgressBar"></span></div>
+        <div class="install-metrics"><span id="installBytes">0 B / 0 B</span><span id="installFiles">0 / 0 files</span></div>
+        <p class="field-help" id="installDetail">Repair verifies SHA-1 hashes. Play uses a faster location-and-size check.</p>
+        <div class="modal-actions single-action"><button class="secondary-button" id="closeInstallButton" type="button" disabled>Close</button></div>
+      </section>
+    </dialog>
+
+    <dialog class="modal-dialog" id="rememberDialog">
+      <section class="modal-card auth-card">
+        <div class="modal-header">
+          <div><span class="eyebrow">ACCOUNT SECURITY</span><h2>Stay signed in?</h2></div>
+        </div>
+        <p><strong>Do you want to stay signed in?</strong></p>
+        <p class="field-help">Choose Yes to store a Microsoft refresh token in this device's secure credential storage. Choose No to keep the account only until Ruby Launcher closes.</p>
+        <p class="field-help">Ruby Launcher never stores your Microsoft password.</p>
+        <div class="modal-actions">
+          <button class="secondary-button" id="rememberNoButton" type="button">No, session only</button>
+          <button class="primary-button" id="rememberYesButton" type="button">Yes, stay signed in</button>
+        </div>
+      </section>
+    </dialog>
+
+    <dialog class="modal-dialog launcher-menu-dialog" id="launcherMenuDialog">
+      <section class="modal-card launcher-menu-card">
+        <div class="modal-header">
+          <div><span class="eyebrow">RUBY LAUNCHER</span><h2>Launcher menu</h2></div>
+          <button class="icon-button" id="closeLauncherMenuButton" type="button" aria-label="Close">×</button>
+        </div>
+        <div class="launcher-menu-list">
+          <button class="launcher-menu-action" id="openGameLibraryButton" data-default-focus type="button">
+            <span><strong>WIP Game Library</strong><small>Future home for games beyond Minecraft</small></span><span aria-hidden="true">›</span>
+          </button>
+          <button class="launcher-menu-action" id="openLauncherSettingsButton" type="button">
+            <span><strong>Settings</strong><small>Launcher, profiles and controller preferences</small></span><span aria-hidden="true">›</span>
+          </button>
+          <button class="launcher-menu-action is-danger" id="exitLauncherButton" type="button">
+            <span><strong>Exit Launcher</strong><small>Close Ruby Launcher</small></span><span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <p class="launcher-menu-hint"><kbd>Start</kbd> closes this menu · <kbd>Start</kbd><kbd>RB</kbd> opens logs</p>
+      </section>
+    </dialog>
+
+    <dialog class="modal-dialog launcher-menu-dialog" id="gameLibraryDialog">
+      <section class="modal-card launcher-menu-card">
+        <div class="modal-header">
+          <div><span class="eyebrow">WORK IN PROGRESS</span><h2>Game Library</h2></div>
+        </div>
+        <div class="wip-library-panel">
+          <img src="./assets/ruby-mark.svg" alt="" />
+          <div><strong>The wider Ruby game library is not connected yet.</strong><p>Minecraft profiles remain available in Game Profiles. This entry reserves the controller menu location for future game support.</p></div>
+        </div>
+        <div class="modal-actions single-action"><button class="primary-button" id="closeGameLibraryButton" type="button">Back to launcher</button></div>
+      </section>
+    </dialog>
+
+    <dialog class="modal-dialog" id="logsDialog">
+      <section class="modal-card logs-card">
+        <div class="modal-header">
+          <div><span class="eyebrow">DIAGNOSTICS</span><h2>Launcher log</h2></div>
+          <button class="icon-button" id="closeLogsButton" type="button" aria-label="Close">×</button>
+        </div>
+        <pre class="log-output" id="logOutput" aria-live="polite"></pre>
+        <div class="modal-actions single-action"><button class="secondary-button" id="refreshLogsButton" type="button">Refresh log</button></div>
+      </section>
+    </dialog>
+
+    <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
