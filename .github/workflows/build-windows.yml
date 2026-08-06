@@ -1,0 +1,58 @@
+name: Build Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ruby-windows-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    name: Windows x64 installer
+    runs-on: windows-latest
+    timeout-minutes: 75
+
+    steps:
+      - name: Check out private source
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Set up Java for Ruby Modules
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build outputs
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend and Tauri dependencies
+        shell: pwsh
+        run: npm install --no-audit --no-fund
+
+      - name: Verify and prepare Ruby Launcher
+        shell: pwsh
+        run: npm run ci:prepare
+
+      - name: Build Windows installers
+        uses: tauri-apps/tauri-action@v1
+        with:
+          args: --bundles nsis,msi
+          uploadWorkflowArtifacts: true
+          workflowArtifactNamePattern: Ruby-Launcher-v[version]-[platform]-[arch]-[bundle]
