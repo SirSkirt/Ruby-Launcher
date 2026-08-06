@@ -1,4 +1,4 @@
-# Ruby Launcher Architecture — b2026.21
+# Ruby Launcher Architecture — b2026.22
 
 ## Profile and launch chain
 

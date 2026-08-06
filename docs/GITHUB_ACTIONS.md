@@ -44,7 +44,7 @@ Do not place this token in source code, Tauri configuration, frontend JavaScript
 
 - Windows GitHub-hosted runner
 - Node.js 22
-- Eclipse Temurin Java 17 for Ruby Module Loader and Controller Support
+- Eclipse Temurin Java 21 for Ruby Module Loader and Controller Support
 - Stable Rust through rustup
 - Tauri CLI 2.11.4
 - Tauri Action v1

@@ -3,6 +3,7 @@ import { mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
+const javaRelease = 21;
 const loaderSource = join(root, "module-loader", "src");
 const loaderClasses = join(root, "module-loader", "build", "classes");
 const loaderManifest = join(root, "module-loader", "MANIFEST.MF");
@@ -20,17 +21,34 @@ function javaSources(directory) {
   });
 }
 
+function requireJava21() {
+  let output;
+  try {
+    output = execFileSync("javac", ["-version"], { encoding: "utf8" }).trim();
+  } catch (error) {
+    throw new Error("Ruby Modules require a Java 21 JDK, but javac could not be started.", { cause: error });
+  }
+
+  const match = output.match(/javac\s+(\d+)/i);
+  const major = match ? Number(match[1]) : NaN;
+  if (!Number.isFinite(major) || major < javaRelease) {
+    throw new Error(`Ruby Modules require JDK ${javaRelease} or newer. Found: ${output || "unknown javac version"}`);
+  }
+  console.log(`Ruby Modules Java toolchain: ${output}`);
+}
+
 function compile(sourceRoot, classes, extraArgs = [], useRelease = true) {
   rmSync(classes, { recursive: true, force: true });
   mkdirSync(classes, { recursive: true });
   const sources = javaSources(sourceRoot);
   if (!sources.length) throw new Error(`No Java sources found in ${sourceRoot}`);
   const targetArgs = useRelease
-    ? ["--release", "17"]
-    : ["-source", "17", "-target", "17"];
+    ? ["--release", String(javaRelease)]
+    : ["-source", String(javaRelease), "-target", String(javaRelease)];
   execFileSync("javac", [...targetArgs, ...extraArgs, "-d", classes, ...sources], { stdio: "inherit" });
 }
 
+requireJava21();
 mkdirSync(join(root, "src-tauri", "resources", "modules"), { recursive: true });
 compile(loaderSource, loaderClasses, [
   "--add-exports",

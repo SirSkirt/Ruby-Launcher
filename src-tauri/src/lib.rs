@@ -20,7 +20,7 @@ use std::{
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::io::AsyncWriteExt;
 
-const BUILD_ID: &str = "b2026.21";
+const BUILD_ID: &str = "b2026.22";
 const MICROSOFT_CLIENT_ID: &str = "3fcb3980-88fb-46bb-b044-4aff88ff9454";
 const SECURE_CREDENTIAL_SERVICE: &str = "com.qtechstudios.rubylauncher";
 const SECURE_REFRESH_TOKEN_USER: &str = "microsoft-refresh-token";

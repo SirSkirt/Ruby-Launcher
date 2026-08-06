@@ -1,4 +1,4 @@
-# Validation Notes — b2026.21
+# Validation Notes — b2026.22
 
 ## Performed in this build environment
 
@@ -13,7 +13,9 @@
 - HTML element IDs were checked against every JavaScript element reference; no missing or duplicate IDs were found
 - Frontend command names were checked against Tauri's registered command list
 - CSS delimiter validation completed
-- Ruby Module Loader 0.5.0 and Controller Support 0.8.4 rebuilt successfully with Java 17-compatible bytecode
+- Ruby Module Loader 0.5.0 and Controller Support 0.8.4 rebuilt successfully with Java 21 bytecode
+- GitHub Actions build and publish workflows both select Eclipse Temurin Java 21 and print the active `java`/`javac` versions before building
+- Module build script rejects JDKs older than 21 with an explicit toolchain error
 - A compiled controller regression harness confirmed **Movement: Classic** is first, disabled and persisted as `movementMode=classic`
 - Source and compiled-module checks confirmed `startUseItem()` is invoked only on the trigger rising edge, Minecraft's Use key remains held until release, and no Ruby-owned Use repeat timer remains
 - Fabric runtime mapping adapter passed a compiled mock MappingResolver test for class, field and overloaded-method descriptor translation

@@ -1,14 +1,14 @@
 # Ruby Launcher
 
-**Build:** b2026.21  
-**Application version:** 0.21.0  
+**Build:** b2026.22  
+**Application version:** 0.22.0  
 **Author:** QTech Studios
 
 Ruby Launcher is a controller-first Minecraft Java launcher built with Tauri 2, Rust and JavaScript. It handles Microsoft authentication, Vanilla installation, managed Java runtimes and launching Minecraft without requiring the user to configure Java manually.
 
-## b2026.21 milestone
+## b2026.22 milestone
 
-This build adds GitHub Actions support for reproducible Windows builds from a private source repository. Test builds can be triggered from the GitHub mobile site or app and downloaded as private workflow artifacts. A separate manual workflow can publish only compiled NSIS/MSI installers to a public releases repository using a repository-scoped secret token.
+This build fixes the first GitHub Actions build failure by moving Ruby Module compilation from Java 17 to Java 21. Ruby Module Loader uses the JDK's internal ASM package and Controller Support targets Minecraft 1.21+, so CI now matches the Java 21 runtime used by the supported game versions. The private-source/public-release workflow from b2026.21 is otherwise preserved.
 
 ### GitHub Actions foundation
 
@@ -129,7 +129,7 @@ npm run build
 npm run desktop:build
 ```
 
-`modules:build` produces Java 17-compatible bytecode for the loader JAR and bundled Controller Support `.rmod`.
+`modules:build` targets Java 21, matching Minecraft 1.21+ and Ruby Module Loader's JDK-internal ASM usage.
 
 ## Current limitations
 

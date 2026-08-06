@@ -205,7 +205,7 @@ function slugify(value) {
 async function browserFallback(command, args) {
   switch (command) {
     case "launcher_info":
-      return { name: "Ruby Launcher", version: "0.21.0", build: "b2026.21", platform: "Browser preview", nativeBackend: false };
+      return { name: "Ruby Launcher", version: "0.22.0", build: "b2026.22", platform: "Browser preview", nativeBackend: false };
     case "load_settings":
       return readJson(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
     case "save_settings":
