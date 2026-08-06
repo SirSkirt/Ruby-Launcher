@@ -1,0 +1,28 @@
+{
+  "name": "ruby-launcher",
+  "private": true,
+  "version": "0.21.0",
+  "description": "Ruby Launcher - controller-first Minecraft Java launcher with managed Java, secure Microsoft sign-in and Ruby Module Loader.",
+  "author": "QTech Studios",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "controller:build": "node scripts/build-modules.mjs",
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/dev.mjs --dist",
+    "tauri": "tauri",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build",
+    "android:init": "tauri android init",
+    "android:dev": "tauri android dev",
+    "android:build": "tauri android build --apk",
+    "android:build:split": "tauri android build --apk --split-per-abi",
+    "modules:build": "node scripts/build-modules.mjs",
+    "ci:verify": "node scripts/verify-ci.mjs",
+    "ci:prepare": "npm run ci:verify && npm run modules:build && npm run build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4"
+  }
+}
