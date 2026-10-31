@@ -1,19 +1,74 @@
 # Ruby Launcher UI concepts
 
-Mockups for a controller-first redesign. Nothing in `src-web/` has been changed.
+Mockups for a controller-first redesign. Nothing in `src-web/` has been changed yet.
 
-**To try them:** serve this folder (`npx serve design/ui-concepts` or `python3 -m http.server` from inside it) and open the pages at 1920×1080. Arrow keys or a gamepad D-pad move focus, Enter or A presses. Add `?menu` to Concept A to see its Options menu open.
+**To try them:** serve this folder (`python3 -m http.server` from inside it) and open the pages at 1920×1080. Arrow keys or a gamepad D-pad move focus. Enter/A presses, Esc/B goes back, X and Y work where shown.
 
-| Page | What it shows |
+## Current direction: Ruby Edition Home (`ruby-edition-home.html`)
+
+This is the chosen Shelf concept (A), redesigned around **Minecraft: Ruby Edition** per the development handoff. Java Edition profiles and modpacks are hidden from the UI for now (not deleted from the code), and the tabs are trimmed to **Home · Library · Settings**. Browse comes back with Java Edition.
+
+Preview a state with URL parameters: `?channel=stable|nightly`, `&state=ready|install|update|installing|none`, `&menu` (dropdown open).
+
+| Screenshot | State |
 | --- | --- |
-| `concept-a-shelf.html` | Console-style home: big hero, row of instance tiles |
-| `concept-b-library.html` | List on the left, detail panel on the right |
-| `concept-c-title.html` | Minimal "title screen" menu |
-| `settings.html` | Settings redesign that works with any of the three |
+| `screenshots/ruby-edition-ready.png` | Stable installed, ready to play |
+| `screenshots/ruby-edition-install.png` | Nightly selected, not installed: Play becomes **Install** |
+| `screenshots/ruby-edition-menu.png` | Channel dropdown open |
+| `screenshots/ruby-edition-installing.png` | Installing: progress inside the button, step-by-step status, live download line |
+| `screenshots/ruby-edition-update.png` | Newer build published: Play becomes **Update** |
+| `screenshots/ruby-edition-none.png` | No release published on that channel yet (true for both today) |
 
-The cover art is generated (pixel hills, one colour theme per instance). In the real launcher that slot would use the Modrinth icon or a screenshot when there is one, and the generator when there isn't.
+### How it works
+
+- **Hero = Ruby Edition.** It shows the channel, build number, Minecraft data version (26.3) and an install status chip. The art changes per channel: daytime for Stable, night sky for Nightly, so you can tell at a glance which one you're about to launch.
+- **Play + Channel dropdown, side by side.** The dropdown lists *Ruby Edition — Stable* and *Ruby Edition — Nightly*, each with its install status. The selected channel decides what Play launches.
+- **The primary button follows the selected channel's state:** Play → Install → Installing… 46% → Update → "No build yet". Switching channels mid-install is allowed: the install keeps running and its progress shows on that channel's shelf tile.
+- **Quick launch shelf:** one tile per channel, plus Logs and Manage installs (repair, uninstall, open folder per channel). The tiles and the dropdown control the same selection, so focusing a tile selects that channel and **A** launches it. **X** flips channels from anywhere on Home.
+- **Build info card** (right): branch, latest build + commit, publish time, installed build, and the channel's own install folder. That last line makes the "these don't overwrite each other" promise visible.
+- **Nightly is labelled Experimental** wherever it appears.
+
+### What the Ruby Edition repo already gives us
+
+I checked the `nightly` branch of `SirSkirt/ruby-edtion`. Read-only; nothing there was changed.
+
+- **Releases:** `.github/workflows/ruby-edition-packages.yml` publishes a GitHub release on every push to `main` or `nightly`.
+  - The tag format is `ruby-edition-<branch>-<run#>-<sha8>`.
+  - Nightly releases are marked prerelease.
+  - The assets are `ruby-edition-windows-x64.zip`, `ruby-edition-linux-x86_64.zip` and `SHA256SUMS`.
+  - So the launcher can find each channel's latest build by filtering releases on the tag prefix (`ruby-edition-main-` vs `ruby-edition-nightly-`). The UI shows "build #run · sha" because the tags carry no semantic version.
+- **Each zip contains:**
+  - the three executables: `horizon-client`, `horizon-prepare` and `horizon-ctl`
+  - `research-lock.json`
+  - `ruby-edition-build.json`, which records the channel, commit and Minecraft version
+- **Asset preparation:** `horizon-prepare` builds the game's resources from the player's own Minecraft Java 26.3 client and server jar, and needs JDK 25. Ruby Launcher can already install vanilla versions (with an owned account) and managed Java runtimes, so it can provide all three without redistributing anything. That's the "Prepare Minecraft 26.3 files" step in the installer.
+- **Launch API** (`crates/horizon-client/src/game/launch_api.rs`): `--game-dir`, `--resources`, `--home`, `--session-stdin`, `--fullscreen`, `--quickPlaySingleplayer`. Per-channel separation needs no game changes. Stable and Nightly each get their own `game/` (saves, options), `resources/` and `home/` (logs, crash reports), and the Microsoft session goes in over stdin.
+- **Caveat:** the workflow hasn't had a successful run yet, so there are no releases right now. The "No build yet" state is what the launcher would actually show today.
+
+### Proposed folder layout
+
+```
+<launcher data>/games/ruby-edition/
+  stable/   bin/  resources/  game/  home/  install.json
+  nightly/  bin/  resources/  game/  home/  install.json
+  shared/   minecraft-26.3/  (vanilla client + server jar, used only as prepare input)
+```
+
+### Implementation order (matches the handoff's "Immediate" list)
+
+1. **Backend (Rust/Tauri):** add a `ruby_edition` module.
+   - Commands: `list_ruby_channels` (GitHub releases → latest per channel), `install_ruby_channel` (download → SHA-256 verify → extract → prepare), `launch_ruby_channel` and `uninstall_ruby_channel`.
+   - Progress goes out through the existing `install-progress` event.
+2. **Prepare step:** reuse the existing vanilla installer and Java runtime manager to fetch 26.3 + Java 25, then run `horizon-prepare --prepare --server-jar … --minecraft-dir …` with output into that channel's `resources/`.
+3. **Frontend:** swap the Home view's markup for this design. Hide the Java instance shelf, Versions and Modpacks behind a flag rather than deleting them.
+4. **Shared UI pieces** for later screens: the Y-button context menu, the channel dropdown, and contextual button hints.
 
 ---
+
+## Earlier exploration
+
+The original critique and the three starting concepts are kept below for reference. Pages: `concept-a-shelf.html` (add `?menu` for its Options menu), `concept-b-library.html`, `concept-c-title.html` and `settings.html`.
+
 
 ## What's wrong with the current layout
 

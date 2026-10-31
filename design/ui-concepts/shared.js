@@ -7,6 +7,7 @@ const THEMES = {
   desert: { sky: ["#2b1306", "#c7713a"], sun: "#fff0b8", far: "#7a3e1c", mid: "#b8703a", top: "#e8c27a", dirt: "#9a6232" },
   frost:  { sky: ["#071629", "#3d6ea8"], sun: "#e6f3ff", far: "#2a4a70", mid: "#5d86b0", top: "#eef6ff", dirt: "#7d93ad" },
   nether: { sky: ["#1a0503", "#6b1a0c"], sun: "#ffb35c", far: "#4a0f08", mid: "#7d1d10", top: "#d4502a", dirt: "#3a0b06" },
+  rubynight: { sky: ["#07040f", "#2c1248"], sun: "#f3e9ff", far: "#1c0f33", mid: "#36184a", top: "#d0316a", dirt: "#1a0b1e" },
   end:    { sky: ["#07040f", "#2c1a4f"], sun: "#e9dcff", far: "#241640", mid: "#d8d29a", top: "#efe9b8", dirt: "#9d9566" },
 };
 
@@ -58,8 +59,11 @@ export function paintCovers(root = document) {
 
 // Tiny spatial navigation so the mockups can be driven with arrows or a gamepad D-pad.
 export function enableNav({ initial } = {}) {
-  const all = () => [...document.querySelectorAll(".focusable")].filter((e) => e.offsetParent !== null);
+  // An open element with .focus-trap.is-open (menus, dialogs) captures navigation.
+  const scope = () => document.querySelector(".focus-trap.is-open") ?? document;
+  const all = () => [...scope().querySelectorAll(".focusable")].filter((e) => e.offsetParent !== null);
   let current = (initial && document.querySelector(initial)) || all()[0];
+  const button = (name) => document.dispatchEvent(new CustomEvent("mock-button", { detail: name }));
   const focus = (el) => {
     if (!el) return;
     document.querySelectorAll(".is-focused").forEach((e) => e.classList.remove("is-focused"));
@@ -69,6 +73,7 @@ export function enableNav({ initial } = {}) {
     document.dispatchEvent(new CustomEvent("mock-focus", { detail: el }));
   };
   const move = (dir) => {
+    if (!current || !scope().contains(current)) return focus(all()[0]);
     const a = current.getBoundingClientRect();
     const ac = { x: a.left + a.width / 2, y: a.top + a.height / 2 };
     let best = null, score = Infinity;
@@ -89,6 +94,9 @@ export function enableNav({ initial } = {}) {
   addEventListener("keydown", (e) => {
     if (keys[e.key]) { e.preventDefault(); move(keys[e.key]); }
     if (e.key === "Enter") press();
+    if (e.key === "Escape" || e.key === "Backspace") button("B");
+    if (e.key === "x" || e.key === "X") button("X");
+    if (e.key === "y" || e.key === "Y") button("Y");
   });
   let prev = [];
   const poll = () => {
@@ -98,17 +106,17 @@ export function enableNav({ initial } = {}) {
       const edge = (i) => b[i] && !prev[i];
       if (edge(12)) move("up"); if (edge(13)) move("down"); if (edge(14)) move("left"); if (edge(15)) move("right");
       if (edge(0)) press();
+      if (edge(1)) button("B"); if (edge(2)) button("X"); if (edge(3)) button("Y");
       prev = b;
     }
     requestAnimationFrame(poll);
   };
   requestAnimationFrame(poll);
   focus(current);
-  return { focus };
+  return { focus, current: () => current };
 }
 
-export function renderChrome(activeTab, hints) {
-  const tabs = ["Home", "Library", "Browse", "Settings"];
+export function renderChrome(activeTab, hints, tabs = ["Home", "Library", "Browse", "Settings"]) {
   const top = document.createElement("header");
   top.className = "topbar";
   top.innerHTML = `
@@ -122,10 +130,15 @@ export function renderChrome(activeTab, hints) {
       <span class="account"><span class="avatar">S</span>Steve_QTech</span>
     </div>`;
   document.body.prepend(top);
-  if (hints) {
-    const h = document.createElement("footer");
+  if (hints) setHints(hints);
+}
+
+export function setHints(hints) {
+  let h = document.querySelector("footer.hints");
+  if (!h) {
+    h = document.createElement("footer");
     h.className = "hints";
-    h.innerHTML = hints.map(([g, label, cls = ""]) => `<span><span class="glyph ${cls}">${g}</span>${label}</span>`).join("");
     document.body.append(h);
   }
+  h.innerHTML = hints.map(([g, label, cls = ""]) => `<span><span class="glyph ${cls}">${g}</span>${label}</span>`).join("");
 }

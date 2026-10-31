@@ -73,7 +73,7 @@
     </div>
   </section>
 
-  <div class="ctx" id="ctx">
+  <div class="ctx focus-trap" id="ctx">
     <header>Fabulously Optimized</header>
     <button class="focusable">Edit profile</button>
     <button class="focusable">Repair files</button>
@@ -88,7 +88,7 @@
   renderChrome("Home", [["A", "Play"], ["Y", "Options"], ["B", "Back"], ["☰", "Menu", "wide"]]);
   paintCovers();
   const params = new URLSearchParams(location.search);
-  if (params.has("menu")) document.body.classList.add("show-ctx");
+  if (params.has("menu")) { document.body.classList.add("show-ctx"); ctx.classList.add("is-open"); }
   const nav = enableNav({ initial: params.has("menu") ? ".ctx button" : ".tile" });
   // Hero follows whichever tile has focus, like a console dashboard.
   document.addEventListener("mock-focus", ({ detail: el }) => {
