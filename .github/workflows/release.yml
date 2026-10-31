@@ -134,7 +134,7 @@ jobs:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
           uploadUpdaterJson: false
-          releaseAssetNamePattern: Ruby-Launcher-v[version]-[platform]-[arch][setup].[ext]
+          releaseAssetNamePattern: Ruby-Launcher-v[version]-[platform]-[arch][setup][ext]
           uploadWorkflowArtifacts: true
           workflowArtifactNamePattern: Ruby-Launcher-v[version]-[platform]-[arch]-[bundle]
 
