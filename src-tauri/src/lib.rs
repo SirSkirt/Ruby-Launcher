@@ -22,8 +22,21 @@ use tokio::io::AsyncWriteExt;
 
 mod ruby_edition;
 
-const BUILD_ID: &str = "b2026.23";
-const MICROSOFT_CLIENT_ID: &str = "3fcb3980-88fb-46bb-b044-4aff88ff9454";
+const BUILD_ID: &str = "b2026.24";
+/// The Microsoft (Azure) app ID used for sign-in. It is baked in at build time from the
+/// RUBY_SIGNIN_KEY environment variable (a GitHub Actions secret) instead of living in the source.
+const MICROSOFT_CLIENT_ID: Option<&str> = option_env!("RUBY_SIGNIN_KEY");
+
+fn microsoft_client_id() -> Result<&'static str, String> {
+    MICROSOFT_CLIENT_ID
+        .map(str::trim)
+        .filter(|id| !id.is_empty())
+        .ok_or_else(|| {
+            "This build of Ruby Launcher was made without a Microsoft sign-in key, so signing in isn't available. \
+             Official releases include it; for your own builds, set RUBY_SIGNIN_KEY when building."
+                .to_string()
+        })
+}
 const SECURE_CREDENTIAL_SERVICE: &str = "com.qtechstudios.rubylauncher";
 const SECURE_REFRESH_TOKEN_USER: &str = "microsoft-refresh-token";
 const SETTINGS_FILE: &str = "launcher-settings.json";
@@ -1423,7 +1436,7 @@ async fn refresh_microsoft_access_token(
         .post(MICROSOFT_TOKEN_URL)
         .form(&[
             ("grant_type", "refresh_token"),
-            ("client_id", MICROSOFT_CLIENT_ID),
+            ("client_id", microsoft_client_id()?),
             ("refresh_token", refresh_token),
             ("scope", "XboxLive.signin offline_access"),
         ])
@@ -2965,7 +2978,7 @@ async fn start_microsoft_sign_in(
         .client
         .post(MICROSOFT_DEVICE_CODE_URL)
         .form(&[
-            ("client_id", MICROSOFT_CLIENT_ID),
+            ("client_id", microsoft_client_id()?),
             ("scope", "XboxLive.signin offline_access"),
         ])
         .send()
@@ -3037,7 +3050,7 @@ async fn poll_microsoft_sign_in(
         .post(MICROSOFT_TOKEN_URL)
         .form(&[
             ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
-            ("client_id", MICROSOFT_CLIENT_ID),
+            ("client_id", microsoft_client_id()?),
             ("device_code", pending.device_code.as_str()),
         ])
         .send()
@@ -3957,7 +3970,7 @@ fn start_minecraft_process(
             "auth_session",
             format!("token:{}:{}", account.minecraft_access_token, account.summary.id),
         );
-        replacements.insert("clientid", MICROSOFT_CLIENT_ID.to_string());
+        replacements.insert("clientid", microsoft_client_id()?.to_string());
         replacements.insert("auth_xuid", account.xuid.clone().unwrap_or_default());
         replacements.insert("user_type", "msa".to_string());
         replacements.insert("version_type", version_type.to_string());

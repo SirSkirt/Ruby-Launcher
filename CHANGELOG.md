@@ -1,5 +1,13 @@
 # Ruby Launcher Changelog
 
+## b2026.24 — Stable channel fix & build-time sign-in ID
+
+- Fixed Ruby Edition **Stable** never appearing in the launcher. Ruby Edition now tags Stable releases `ruby-edition-stable-<run>-<sha>`, and the launcher only recognised the older `ruby-edition-main-…` form. Both are accepted now.
+- The Microsoft sign-in application ID is no longer written in the source. It's compiled in at build time from the `RUBY_SIGNIN_KEY` environment variable, which the GitHub workflows fill from the repository secret of the same name. Builds made without it still run, but sign-in shows a clear message instead of working.
+- The Release workflow stops before creating anything if the `RUBY_SIGNIN_KEY` secret is missing; the Build Windows test workflow warns instead.
+- Fixed the double dot in release asset labels on the GitHub release page (e.g. `amd64..AppImage`).
+- Updated the application version to 0.24.0 and the build ID to b2026.24.
+
 ## b2026.23 — Minecraft: Ruby Edition Home & Interface Modes
 
 - Rebuilt Home around **Minecraft: Ruby Edition** using the Shelf design: a large Play button with a Stable/Nightly channel dropdown, install status, a build info card and a Quick Launch shelf for both channels.
