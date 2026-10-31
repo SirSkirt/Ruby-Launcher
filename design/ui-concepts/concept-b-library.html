@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Concept B · Library</title>
+<link rel="stylesheet" href="./shared.css">
+<style>
+  body { background: radial-gradient(circle at 85% 0%, rgba(171,26,66,.28), transparent 900px), var(--bg); }
+  .layout { position: absolute; inset: 132px 64px 112px 64px; display: grid; grid-template-columns: 600px 1fr; gap: 40px; }
+
+  .list { display: flex; flex-direction: column; min-height: 0; }
+  .filters { display: flex; gap: 10px; margin-bottom: 22px; }
+  .filter { height: 50px; padding: 0 22px; border-radius: 999px; font-size: 20px; font-weight: 600; color: var(--muted); background: rgba(255,255,255,.06); display: grid; place-items: center; }
+  .filter.on { background: rgba(213,43,86,.22); color: #ffc2cf; }
+  .rows { display: flex; flex-direction: column; gap: 10px; }
+  .row { display: grid; grid-template-columns: 84px 1fr auto; align-items: center; gap: 22px; height: 112px; padding: 0 24px 0 14px; border-radius: 24px; text-align: left; }
+  .row .icon { width: 84px; height: 84px; border-radius: 18px; }
+  .row strong { display: block; font-size: 26px; font-weight: 700; }
+  .row small { display: block; margin-top: 4px; font-size: 19px; color: var(--muted); }
+  .row .state { font-size: 18px; color: var(--subtle); }
+  .row.is-focused { background: var(--text); color: #1a0e12; transform: none; box-shadow: 0 16px 40px rgba(0,0,0,.4); }
+  .row.is-focused small, .row.is-focused .state { color: #6b5960; }
+  .row.add { grid-template-columns: 84px 1fr; color: var(--muted); }
+  .row.add .icon { display: grid; place-items: center; border: 3px dashed rgba(255,255,255,.2); font-size: 44px; }
+  .row.add.is-focused .icon { border-color: rgba(0,0,0,.25); }
+
+  .detail { position: relative; border-radius: 36px; overflow: hidden; background: var(--surface); display: flex; flex-direction: column; }
+  .banner { height: 420px; position: relative; }
+  .banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, var(--surface) 0%, rgba(24,17,20,.7) 35%, rgba(24,17,20,0) 75%); }
+  .body { padding: 0 56px 48px; margin-top: -120px; position: relative; z-index: 2; display: flex; flex-direction: column; flex: 1; }
+  .body h1 { font-size: 72px; font-weight: 800; letter-spacing: -0.04em; }
+  .body .chips { display: flex; gap: 12px; margin-top: 18px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 36px; }
+  .stat { padding: 22px 24px; border-radius: 20px; background: rgba(255,255,255,.05); }
+  .stat span { display: block; font-size: 18px; color: var(--subtle); }
+  .stat strong { display: block; font-size: 28px; margin-top: 6px; }
+  .acts { display: flex; gap: 16px; margin-top: auto; }
+  .acts .btn { height: 88px; }
+</style>
+</head>
+<body>
+  <div class="layout">
+    <section class="list">
+      <div class="filters"><span class="filter on">All · 5</span><span class="filter">Vanilla</span><span class="filter">Modded</span><span class="filter">Recent</span></div>
+      <div class="rows">
+        <button class="row focusable" id="first"><span class="icon cover" data-cover="4,meadow"></span><span><strong>Fabulously Optimized</strong><small>Fabric · 1.21.4 · 212 mods</small></span><span class="state">2h ago</span></button>
+        <button class="row focusable"><span class="icon cover" data-cover="9,ruby"></span><span><strong>Survival World</strong><small>Vanilla · 1.21.1</small></span><span class="state">Yesterday</span></button>
+        <button class="row focusable"><span class="icon cover" data-cover="21,desert"></span><span><strong>Cobblemon Official</strong><small>Fabric · 1.21.1 · Not installed</small></span><span class="state">New</span></button>
+        <button class="row focusable"><span class="icon cover" data-cover="33,frost"></span><span><strong>Snow Hardcore</strong><small>Vanilla · 1.20.6</small></span><span class="state">3 wk</span></button>
+        <button class="row focusable"><span class="icon cover" data-cover="12,nether"></span><span><strong>Better Nether</strong><small>Quilt · 1.21.1 · 48 mods</small></span><span class="state">2 mo</span></button>
+        <button class="row add focusable"><span class="icon">+</span><span><strong>New instance</strong><small>Vanilla, or browse modpacks</small></span></button>
+      </div>
+    </section>
+
+    <section class="detail">
+      <div class="banner cover" data-cover="4,meadow,96,40"></div>
+      <div class="body">
+        <h1>Fabulously Optimized</h1>
+        <div class="chips"><span class="chip ruby">Fabric</span><span class="chip">Modrinth pack v6.2.1</span><span class="chip"><span class="dot"></span>Ready to play</span></div>
+        <div class="stats">
+          <div class="stat"><span>Minecraft</span><strong>1.21.4</strong></div>
+          <div class="stat"><span>Memory</span><strong>6 GB</strong></div>
+          <div class="stat"><span>Controller</span><strong>On</strong></div>
+          <div class="stat"><span>Played</span><strong>31 h</strong></div>
+        </div>
+        <div class="acts">
+          <button class="btn primary focusable"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>Play</button>
+          <button class="btn focusable">Edit profile</button>
+          <button class="btn focusable">Mods</button>
+          <button class="btn focusable">Repair</button>
+        </div>
+      </div>
+    </section>
+  </div>
+<script type="module">
+  import { paintCovers, enableNav, renderChrome } from "./shared.js";
+  renderChrome("Library", [["A", "Play"], ["X", "Filter"], ["Y", "Options"], ["B", "Back"]]);
+  paintCovers();
+  enableNav({ initial: "#first" });
+</script>
+</body>
+</html>
