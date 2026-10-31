@@ -1,48 +1,48 @@
 # GitHub Actions Builds
 
-Ruby Launcher can be built from a private GitHub repository without exposing its source code or embedding a GitHub token in the application.
+Ruby Launcher is built and released entirely by GitHub Actions. No tokens or secrets need to be configured: both workflows use the repository's built-in `GITHUB_TOKEN`, and no token is ever embedded in the application.
 
 ## Workflows
 
-### Build Windows
+### Build Windows (test builds)
 
-`.github/workflows/build-windows.yml` runs automatically on pushes to `main` and can also be started manually from the **Actions** tab. It builds Windows x64 NSIS and MSI installers and stores them as private workflow artifacts.
+`.github/workflows/build-windows.yml` runs automatically on pushes to `main` and can also be started manually. It builds Windows x64 NSIS and MSI installers and keeps them as workflow artifacts (not a public release).
 
-This is the workflow to use for ordinary test builds. On a phone:
+### Release
 
-1. Open the private Ruby Launcher repository on GitHub.
-2. Open **Actions**.
-3. Select **Build Windows**.
-4. Choose **Run workflow**.
-5. After it succeeds, open the run and download the artifact.
+`.github/workflows/release.yml` is manual-only. It builds Ruby Launcher and publishes a GitHub Release in this repository:
 
-### Publish Windows Release
-
-`.github/workflows/publish-windows.yml` is manual-only. It builds Ruby Launcher from the private repository and publishes only compiled installers to a separate public releases repository.
-
-The workflow defaults to a draft prerelease so the assets can be reviewed before becoming public.
-
-## Private repository configuration
-
-Create these repository variables in the private source repository under **Settings → Secrets and variables → Actions → Variables**:
-
-| Variable | Value |
+| Platform | Files |
 | --- | --- |
-| `RUBY_RELEASES_OWNER` | GitHub account or organization that owns the public releases repository |
-| `RUBY_RELEASES_REPO` | Name of the public releases repository |
-| `RUBY_RELEASES_BRANCH` | Default branch in the public releases repository, normally `main` |
+| Windows x64 | `-setup.exe` (NSIS installer) and `.msi` |
+| Linux x86-64 (optional) | `.AppImage` and `.deb` |
 
-Create this repository secret under **Actions → Secrets**:
+How it runs:
 
-| Secret | Purpose |
-| --- | --- |
-| `RUBY_RELEASES_TOKEN` | Fine-grained GitHub token restricted to the public releases repository with **Contents: Read and write** permission |
+1. Reads the version from `package.json` and the build ID from `src-tauri/src/lib.rs`.
+2. Refuses to run if a release for `v<version>` already exists, so a forgotten version bump can't overwrite a published release.
+3. Creates a draft release whose notes are the newest section of `CHANGELOG.md`.
+4. Builds each platform and uploads its installers to that draft.
+5. Publishes the release, but only if every build succeeded. If one fails, the release stays a draft with whatever finished, and nothing goes public.
 
-Do not place this token in source code, Tauri configuration, frontend JavaScript, compiled resources, or launcher settings. It exists only inside GitHub Actions.
+Options when starting it:
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| Mark as a prerelease | on | Labels it as a test build |
+| Keep as a draft | off | Leave it unpublished so you can review it first |
+| Also build Linux packages | on | Adds the AppImage and `.deb` |
+
+### Releasing from a phone
+
+1. Bump the version in `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json` (CI checks they match) and add a section to the top of `CHANGELOG.md`.
+2. Open the repository on GitHub → **Actions** → **Release** → **Run workflow**.
+3. Pick the options and run it. A full release takes roughly 15–30 minutes.
+4. The finished release appears under **Releases**.
 
 ## Toolchain used by CI
 
-- Windows GitHub-hosted runner
+- GitHub-hosted Windows and Ubuntu 22.04 runners
 - Node.js 22
 - Eclipse Temurin Java 21 for Ruby Module Loader and Controller Support
 - Stable Rust through rustup
@@ -53,6 +53,6 @@ The Java modules are rebuilt from source before the native Tauri build, so the b
 
 ## Update signing
 
-The workflows intentionally do not generate `latest.json` or updater bundles yet because the in-launcher Tauri updater has not been wired into this build. When OTA updates are added, keep the updater private key in GitHub Actions Secrets, keep an external backup, and commit only the public verification key.
+The workflows don't generate `latest.json` or updater bundles yet because the in-launcher Tauri updater has not been wired into this build. When OTA updates are added, keep the updater private key in GitHub Actions Secrets, keep an external backup, and commit only the public verification key.
 
 Android remains a separate release path. It should use Android signing or Play Store signing rather than the desktop updater workflow.

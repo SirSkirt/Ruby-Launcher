@@ -16,6 +16,7 @@
 - Settings now save automatically and use toggles, sliders and left/right pickers instead of desktop form controls.
 - Fixed the "Ask for a controller on startup" screen being dismissed on the first frame when no controller was connected.
 - Java Edition profiles, versions and Modrinth modpacks remain in the code but are hidden behind `JAVA_EDITION_UI` in `src-web/app.js` until Java Edition selection is reintroduced.
+- Added a **Release** workflow that builds Windows (and optionally Linux) installers and publishes a GitHub Release in this repository, with notes taken from this changelog. It replaces the old publish workflow that needed a separate releases repository and token.
 - Updated the application version to 0.23.0 and the build ID to b2026.23.
 
 ## b2026.20 — Safe Held Use

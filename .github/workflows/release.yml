@@ -1,0 +1,151 @@
+name: Release
+
+# Builds Ruby Launcher and publishes a GitHub Release in this repository.
+# Start it from Actions → Release → Run workflow (works from the GitHub mobile site too).
+# The version comes from package.json; bump it (and CHANGELOG.md) before releasing.
+
+on:
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: Mark as a prerelease (test build)
+        type: boolean
+        default: true
+      draft:
+        description: Keep as a draft so you can review it before it's public
+        type: boolean
+        default: false
+      linux:
+        description: Also build Linux packages (AppImage and .deb)
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ruby-launcher-release
+  cancel-in-progress: false
+
+jobs:
+  create-release:
+    name: Create draft release
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.release.outputs.id }}
+      version: ${{ steps.info.outputs.version }}
+      matrix: ${{ steps.info.outputs.matrix }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Read version, build ID and release notes
+        id: info
+        env:
+          BUILD_LINUX: ${{ inputs.linux }}
+        run: |
+          node --input-type=module <<'EOF'
+          import { readFileSync, writeFileSync, appendFileSync } from "node:fs";
+          const version = JSON.parse(readFileSync("package.json", "utf8")).version;
+          const build = readFileSync("src-tauri/src/lib.rs", "utf8").match(/const BUILD_ID: &str = "([^"]+)"/)?.[1] ?? "";
+          // Release notes: the newest section of CHANGELOG.md.
+          const changelog = readFileSync("CHANGELOG.md", "utf8");
+          const section = changelog.split(/^## /m)[1] ?? "";
+          const notes = section ? `## ${section.trim()}\n` : "See CHANGELOG.md.\n";
+          writeFileSync("release-notes.md", `${notes}\n---\nBuilt by GitHub Actions from ${process.env.GITHUB_SHA.slice(0, 8)}.\n`);
+          const matrix = [{ platform: "windows", os: "windows-latest", args: "--bundles nsis,msi" }];
+          if (process.env.BUILD_LINUX === "true") matrix.push({ platform: "linux", os: "ubuntu-22.04", args: "--bundles appimage,deb" });
+          appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\nbuild=${build}\nmatrix=${JSON.stringify({ include: matrix })}\n`);
+          console.log(`Ruby Launcher v${version} (${build})`);
+          EOF
+
+      - name: Stop if this version was already released
+        run: |
+          tag="v${{ steps.info.outputs.version }}"
+          if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${tag}" --silent 2>/dev/null; then
+            echo "::error::A release for ${tag} already exists. Bump the version in package.json, src-tauri/Cargo.toml and src-tauri/tauri.conf.json first."
+            exit 1
+          fi
+          # Leftover drafts for this tag (from a failed run) are replaced.
+          for id in $(gh api "repos/${GITHUB_REPOSITORY}/releases" --paginate --jq ".[] | select(.draft and .tag_name == \"${tag}\") | .id"); do
+            echo "Deleting leftover draft ${id}"
+            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/releases/${id}"
+          done
+
+      - name: Create draft release
+        id: release
+        run: |
+          id=$(gh api "repos/${GITHUB_REPOSITORY}/releases" \
+            -f tag_name="v${{ steps.info.outputs.version }}" \
+            -f target_commitish="${GITHUB_SHA}" \
+            -f name="Ruby Launcher v${{ steps.info.outputs.version }} (${{ steps.info.outputs.build }})" \
+            -F body=@release-notes.md \
+            -F draft=true \
+            -F prerelease=${{ inputs.prerelease }} \
+            --jq .id)
+          echo "id=${id}" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.platform }}
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.create-release.outputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Linux build libraries
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Set up Java 21 for Ruby Modules
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+          key: release-${{ matrix.platform }}
+
+      - name: Install frontend and Tauri dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Verify and prepare Ruby Launcher
+        run: npm run ci:prepare
+
+      - name: Build and upload to the release
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          args: ${{ matrix.args }}
+          uploadUpdaterJson: false
+          releaseAssetNamePattern: Ruby-Launcher-v[version]-[platform]-[arch][setup].[ext]
+          uploadWorkflowArtifacts: true
+          workflowArtifactNamePattern: Ruby-Launcher-v[version]-[platform]-[arch]-[bundle]
+
+  publish:
+    name: Publish release
+    needs: [create-release, build]
+    if: ${{ !inputs.draft }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      # Only reached when every build succeeded; otherwise the release stays a draft.
+      - name: Publish
+        run: gh api -X PATCH "repos/${GITHUB_REPOSITORY}/releases/${{ needs.create-release.outputs.release_id }}" -F draft=false --silent
