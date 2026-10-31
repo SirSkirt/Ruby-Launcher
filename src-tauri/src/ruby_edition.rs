@@ -31,6 +31,12 @@ const PROGRESS_EVENT: &str = "ruby-edition-progress";
 /// (channel id, display name, git branch)
 const CHANNELS: [(&str, &str, &str); 2] = [("stable", "Stable", "main"), ("nightly", "Nightly", "nightly")];
 
+/// The name each channel's release tags use: `ruby-edition-<name>-<run>-<sha8>`. Stable builds
+/// were first tagged after their branch (`main`) and are now tagged `stable`; both are accepted.
+fn tag_names(channel: &str) -> &'static [&'static str] {
+    if channel == "stable" { &["stable", "main"] } else { &["nightly"] }
+}
+
 fn channel_meta(channel: &str) -> Result<(&'static str, &'static str, &'static str), String> {
     CHANNELS
         .iter()
@@ -249,20 +255,20 @@ fn step_progress(channel: &str, step: &'static str, step_index: u8, message: imp
     }
 }
 
-/// Parses `ruby-edition-<branch>-<run>-<sha8>`.
-fn parse_tag(tag: &str, branch: &str) -> Option<(u64, String)> {
-    let rest = tag.strip_prefix(&format!("ruby-edition-{branch}-"))?;
+/// Parses `ruby-edition-<name>-<run>-<sha8>`.
+fn parse_tag(tag: &str, name: &str) -> Option<(u64, String)> {
+    let rest = tag.strip_prefix(&format!("ruby-edition-{name}-"))?;
     let (run, sha) = rest.split_once('-')?;
     Some((run.parse().ok()?, sha.to_string()))
 }
 
-fn latest_for_branch(releases: &[GhRelease], branch: &str, label: &str) -> Option<RubyRelease> {
+fn latest_for_channel(releases: &[GhRelease], channel: &str, label: &str) -> Option<RubyRelease> {
     let asset_name = format!("ruby-edition-{label}.zip");
     releases
         .iter()
         .filter(|release| !release.draft)
         .filter_map(|release| {
-            let (run, commit) = parse_tag(&release.tag_name, branch)?;
+            let (run, commit) = tag_names(channel).iter().find_map(|name| parse_tag(&release.tag_name, name))?;
             let asset = release.assets.iter().find(|asset| asset.name == asset_name)?;
             let checksums = release.assets.iter().find(|asset| asset.name == "SHA256SUMS");
             Some(RubyRelease {
@@ -358,8 +364,8 @@ pub(crate) async fn ruby_edition_refresh(app: AppHandle, state: State<'_, AppSta
 
     match (result, platform_asset_label()) {
         (Ok(releases), Some(label)) => {
-            cache.stable = latest_for_branch(&releases, "main", label);
-            cache.nightly = latest_for_branch(&releases, "nightly", label);
+            cache.stable = latest_for_channel(&releases, "stable", label);
+            cache.nightly = latest_for_channel(&releases, "nightly", label);
             cache.error = None;
             append_log(
                 &app,
@@ -1166,6 +1172,23 @@ mod tests {
     }
 
     #[test]
+    fn stable_accepts_current_stable_tags_and_older_main_tags() {
+        let zip = "ruby-edition-windows-x64.zip";
+        // The tags Ruby Edition actually published.
+        let releases = vec![
+            release("ruby-edition-nightly-1-7260efa5", &[zip, "SHA256SUMS"]),
+            release("ruby-edition-nightly-2-094c24db", &[zip, "SHA256SUMS"]),
+            release("ruby-edition-stable-3-e3960c40", &[zip, "SHA256SUMS"]),
+        ];
+        let stable = latest_for_channel(&releases, "stable", "windows-x64").unwrap();
+        assert_eq!((stable.run, stable.commit.as_str()), (3, "e3960c40"));
+        let nightly = latest_for_channel(&releases, "nightly", "windows-x64").unwrap();
+        assert_eq!((nightly.run, nightly.commit.as_str()), (2, "094c24db"));
+        let older = vec![release("ruby-edition-main-1-aaaaaaaa", &[zip, "SHA256SUMS"])];
+        assert_eq!(latest_for_channel(&older, "stable", "windows-x64").unwrap().run, 1);
+    }
+
+    #[test]
     fn tags_parse_run_and_commit() {
         assert_eq!(parse_tag("ruby-edition-nightly-57-9b0d44a1", "nightly"), Some((57, "9b0d44a1".to_string())));
         assert_eq!(parse_tag("ruby-edition-main-42-3fa91c2e", "main"), Some((42, "3fa91c2e".to_string())));
@@ -1182,12 +1205,12 @@ mod tests {
             release("ruby-edition-nightly-60-cccccccc", &["ruby-edition-linux-x86_64.zip"]),
             release("ruby-edition-main-12-dddddddd", &[zip]),
         ];
-        let nightly = latest_for_branch(&releases, "nightly", "windows-x64").unwrap();
+        let nightly = latest_for_channel(&releases, "nightly", "windows-x64").unwrap();
         assert_eq!(nightly.run, 57);
         assert!(nightly.checksums_url.is_some());
-        let stable = latest_for_branch(&releases, "main", "windows-x64").unwrap();
+        let stable = latest_for_channel(&releases, "stable", "windows-x64").unwrap();
         assert_eq!(stable.run, 12);
         assert!(stable.checksums_url.is_none());
-        assert!(latest_for_branch(&releases, "main", "linux-x86_64").is_none());
+        assert!(latest_for_channel(&releases, "stable", "linux-x86_64").is_none());
     }
 }

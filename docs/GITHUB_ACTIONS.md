@@ -1,6 +1,18 @@
 # GitHub Actions Builds
 
-Ruby Launcher is built and released entirely by GitHub Actions. No tokens or secrets need to be configured: both workflows use the repository's built-in `GITHUB_TOKEN`, and no token is ever embedded in the application.
+Ruby Launcher is built and released entirely by GitHub Actions. Publishing uses the repository's built-in `GITHUB_TOKEN`; no GitHub token is ever embedded in the application.
+
+## Repository secret
+
+| Secret | Purpose |
+| --- | --- |
+| `RUBY_SIGNIN_KEY` | The Microsoft sign-in application (client) ID. It's compiled into the launcher at build time, so it isn't stored in the public source. |
+
+The Release workflow refuses to run without it. Build Windows still builds, with a warning, but that test build can't sign in.
+
+Keeping the ID in a secret keeps it out of the source code, but it is not hidden from people who have the app. Microsoft's sign-in flow sends the ID in plain text and it's inside the compiled launcher, so treat it as private-ish, not secret.
+
+For local builds, set `RUBY_SIGNIN_KEY` in your environment before `npm run desktop:build` or `cargo build`. Without it the launcher runs, but sign-in shows a message instead.
 
 ## Workflows
 

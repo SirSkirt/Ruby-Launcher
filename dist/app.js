@@ -301,7 +301,7 @@ const previewRubyCancelled = new Set();
 async function browserFallback(command, args) {
   switch (command) {
     case "launcher_info":
-      return { name: "Ruby Launcher", version: "0.23.0", build: "b2026.23", platform: "Browser preview", nativeBackend: false };
+      return { name: "Ruby Launcher", version: "0.24.0", build: "b2026.24", platform: "Browser preview", nativeBackend: false };
     case "load_settings":
       return readJson(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
     case "save_settings":

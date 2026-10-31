@@ -1,6 +1,6 @@
 [package]
 name = "ruby-launcher"
-version = "0.23.0"
+version = "0.24.0"
 description = "Ruby Launcher: controller-first launcher for Minecraft: Ruby Edition"
 authors = ["QTech Studios"]
 edition = "2021"

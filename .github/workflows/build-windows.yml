@@ -18,6 +18,9 @@ jobs:
     name: Windows x64 installer
     runs-on: windows-latest
     timeout-minutes: 75
+    env:
+      # Microsoft sign-in application ID, compiled into the launcher (see microsoft_client_id in lib.rs).
+      RUBY_SIGNIN_KEY: ${{ secrets.RUBY_SIGNIN_KEY }}
 
     steps:
       - name: Check out private source
@@ -51,6 +54,13 @@ jobs:
       - name: Install frontend and Tauri dependencies
         shell: pwsh
         run: npm install --no-audit --no-fund
+
+      - name: Check the sign-in key secret
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:RUBY_SIGNIN_KEY)) {
+            Write-Output "::warning::RUBY_SIGNIN_KEY secret is missing; this test build won't be able to sign in."
+          }
 
       - name: Verify and prepare Ruby Launcher
         shell: pwsh

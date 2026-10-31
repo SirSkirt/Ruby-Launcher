@@ -1,7 +1,7 @@
 # Ruby Launcher
 
-**Build:** b2026.23  
-**Application version:** 0.23.0  
+**Build:** b2026.24  
+**Application version:** 0.24.0  
 **Author:** QTech Studios
 
 Ruby Launcher is a controller-first games launcher built with Tauri 2, Rust and JavaScript. Its featured game is **Minecraft: Ruby Edition**, a Rust recreation of Minecraft: Java Edition, with Stable and Nightly channels installed side by side. It handles Microsoft authentication, downloads and verification, preparing game files from the player's own copy of Minecraft, and launching, in either a fullscreen Controller mode or a windowed Desktop mode.
