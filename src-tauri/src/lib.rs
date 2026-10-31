@@ -20,7 +20,9 @@ use std::{
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::io::AsyncWriteExt;
 
-const BUILD_ID: &str = "b2026.22";
+mod ruby_edition;
+
+const BUILD_ID: &str = "b2026.23";
 const MICROSOFT_CLIENT_ID: &str = "3fcb3980-88fb-46bb-b044-4aff88ff9454";
 const SECURE_CREDENTIAL_SERVICE: &str = "com.qtechstudios.rubylauncher";
 const SECURE_REFRESH_TOKEN_USER: &str = "microsoft-refresh-token";
@@ -73,6 +75,10 @@ struct LauncherSettings {
     launcher_fullscreen: bool,
     controller_prompt_on_start: bool,
     hide_launcher_while_playing: bool,
+    /// "controller" (fullscreen, console-style) or "desktop" (windowed, mouse and keyboard).
+    ui_mode: String,
+    /// The Ruby Edition channel Home launches: "stable" or "nightly".
+    ruby_channel: String,
 }
 
 impl Default for LauncherSettings {
@@ -91,6 +97,8 @@ impl Default for LauncherSettings {
             launcher_fullscreen: true,
             controller_prompt_on_start: true,
             hide_launcher_while_playing: true,
+            ui_mode: "controller".to_string(),
+            ruby_channel: "stable".to_string(),
         }
     }
 }
@@ -370,6 +378,8 @@ struct VersionDownloads {
     client: DownloadDescriptor,
     #[serde(default)]
     client_mappings: Option<DownloadDescriptor>,
+    #[serde(default)]
+    server: Option<DownloadDescriptor>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -1567,13 +1577,21 @@ fn launcher_info() -> LauncherInfo {
 }
 
 fn apply_launcher_window_settings(app: &AppHandle, settings: &LauncherSettings) -> Result<(), String> {
+    // Desktop mode is always a normal window; controller mode follows the fullscreen switch.
+    let fullscreen = settings.ui_mode != "desktop" && settings.launcher_fullscreen;
     if let Some(window) = app.get_webview_window("main") {
+        let was_fullscreen = window.is_fullscreen().unwrap_or(false);
         window
-            .set_decorations(!settings.launcher_fullscreen)
+            .set_decorations(!fullscreen)
             .map_err(|error| format!("Could not change launcher window decorations: {error}"))?;
         window
-            .set_fullscreen(settings.launcher_fullscreen)
+            .set_fullscreen(fullscreen)
             .map_err(|error| format!("Could not change launcher fullscreen mode: {error}"))?;
+        if was_fullscreen && !fullscreen {
+            // Leaving fullscreen into a window the size of the screen feels like nothing happened.
+            let _ = window.set_size(tauri::LogicalSize::new(1280.0, 800.0));
+            let _ = window.center();
+        }
     }
     Ok(())
 }
@@ -1600,6 +1618,12 @@ fn save_settings(app: AppHandle, settings: LauncherSettings) -> Result<LauncherS
     }
     if !(0.05..=0.75).contains(&settings.controller_deadzone) {
         return Err("Controller deadzone must be between 5% and 75%.".to_string());
+    }
+    if !["controller", "desktop"].contains(&settings.ui_mode.as_str()) {
+        return Err("Interface mode must be Controller or Desktop.".to_string());
+    }
+    if !["stable", "nightly"].contains(&settings.ruby_channel.as_str()) {
+        return Err("Ruby Edition channel must be Stable or Nightly.".to_string());
     }
     let path = path_for(&app, SETTINGS_FILE)?;
     write_json(&path, &settings)?;
@@ -2530,361 +2554,14 @@ async fn install_vanilla_internal(
         0,
     );
 
-    let install_result = async {
-        let version_dir = instance_root
-            .join("versions")
-            .join(&instance.minecraft_version);
-        let version_json_path = version_dir.join(format!("{}.json", instance.minecraft_version));
-
-        let metadata: VersionMetadata = if !verify_existing && version_json_path.exists() {
-            let bytes = fs::read(&version_json_path).map_err(|error| {
-                format!("Could not read local version metadata {}: {error}", version_json_path.display())
-            })?;
-            serde_json::from_slice(&bytes)
-                .map_err(|error| format!("Local version metadata is invalid: {error}"))?
-        } else {
-            let manifest: VersionManifest = fetch_json(
-                &state.client,
-                VERSION_MANIFEST_URL,
-                "Minecraft version catalog",
-            )
-            .await?;
-            let version_entry = manifest
-                .versions
-                .into_iter()
-                .find(|version| version.id == instance.minecraft_version)
-                .ok_or_else(|| {
-                    format!(
-                        "Minecraft version '{}' was not found in Mojang's current version catalog.",
-                        instance.minecraft_version
-                    )
-                })?;
-
-            emit_progress(&app, "metadata", "Loading version metadata…", 0, 0, 0, 0);
-            let version_response = state
-                .client
-                .get(&version_entry.url)
-                .send()
-                .await
-                .map_err(|error| format!("Could not download version metadata: {error}"))?;
-            let version_status = version_response.status();
-            if !version_status.is_success() {
-                let body = version_response.text().await.unwrap_or_default();
-                return Err(format!(
-                    "Could not download version metadata ({version_status}): {body}"
-                ));
-            }
-            let version_bytes = version_response
-                .bytes()
-                .await
-                .map_err(|error| format!("Could not read version metadata: {error}"))?;
-            if !sha1_hex_bytes(&version_bytes).eq_ignore_ascii_case(&version_entry.sha1) {
-                return Err("Version metadata failed SHA-1 verification.".to_string());
-            }
-            let parsed: VersionMetadata = serde_json::from_slice(&version_bytes)
-                .map_err(|error| format!("Version metadata is invalid: {error}"))?;
-            if parsed.id != version_entry.id {
-                return Err(format!(
-                    "Version metadata ID mismatch. Expected '{}', received '{}'.",
-                    version_entry.id, parsed.id
-                ));
-            }
-            write_bytes_atomic(&version_json_path, &version_bytes)?;
-            parsed
-        };
-
-        if metadata.id != instance.minecraft_version {
-            return Err(format!(
-                "The local version metadata belongs to '{}' instead of '{}'. Run Repair to replace it.",
-                metadata.id, instance.minecraft_version
-            ));
-        }
-
-        let asset_index_path = instance_root
-            .join("assets")
-            .join("indexes")
-            .join(format!("{}.json", metadata.asset_index.id));
-        let asset_index: AssetIndex = if !verify_existing && asset_index_path.exists() {
-            let bytes = fs::read(&asset_index_path).map_err(|error| {
-                format!("Could not read local asset index {}: {error}", asset_index_path.display())
-            })?;
-            serde_json::from_slice(&bytes)
-                .map_err(|error| format!("Local asset index is invalid: {error}"))?
-        } else {
-            emit_progress(&app, "metadata", "Loading asset index…", 0, 0, 0, 0);
-            let asset_response = state
-                .client
-                .get(&metadata.asset_index.url)
-                .send()
-                .await
-                .map_err(|error| format!("Could not download asset index: {error}"))?;
-            let asset_status = asset_response.status();
-            if !asset_status.is_success() {
-                let body = asset_response.text().await.unwrap_or_default();
-                return Err(format!("Could not download asset index ({asset_status}): {body}"));
-            }
-            let asset_bytes = asset_response
-                .bytes()
-                .await
-                .map_err(|error| format!("Could not read asset index: {error}"))?;
-            if !sha1_hex_bytes(&asset_bytes).eq_ignore_ascii_case(&metadata.asset_index.sha1) {
-                return Err("Asset index failed SHA-1 verification.".to_string());
-            }
-            if asset_bytes.len() as u64 != metadata.asset_index.size {
-                return Err("Asset index failed size verification.".to_string());
-            }
-            let parsed: AssetIndex = serde_json::from_slice(&asset_bytes)
-                .map_err(|error| format!("Asset index is invalid: {error}"))?;
-            write_bytes_atomic(&asset_index_path, &asset_bytes)?;
-            parsed
-        };
-
-        let mut tasks = Vec::new();
-        let mut seen = HashSet::new();
-        let mut native_archives = Vec::new();
-
-        add_task(
-            &mut tasks,
-            &mut seen,
-            DownloadTask {
-                url: metadata.downloads.client.url.clone(),
-                destination: version_dir.join(format!("{}.jar", metadata.id)),
-                sha1: Some(metadata.downloads.client.sha1.clone()),
-                size: metadata.downloads.client.size,
-                label: format!("Minecraft {} client", metadata.id),
-            },
-        );
-
-        if let Some(mappings) = &metadata.downloads.client_mappings {
-            add_task(
-                &mut tasks,
-                &mut seen,
-                DownloadTask {
-                    url: mappings.url.clone(),
-                    destination: version_dir.join(format!("{}-client-mappings.txt", metadata.id)),
-                    sha1: Some(mappings.sha1.clone()),
-                    size: mappings.size,
-                    label: format!("Minecraft {} client mappings", metadata.id),
-                },
-            );
-        }
-
-        for (logical_name, asset) in &asset_index.objects {
-            let prefix = asset.hash.get(0..2).ok_or_else(|| {
-                format!("Asset '{logical_name}' has an invalid content hash.")
-            })?;
-            add_task(
-                &mut tasks,
-                &mut seen,
-                DownloadTask {
-                    url: format!("{ASSET_BASE_URL}/{prefix}/{}", asset.hash),
-                    destination: instance_root
-                        .join("assets")
-                        .join("objects")
-                        .join(prefix)
-                        .join(&asset.hash),
-                    sha1: Some(asset.hash.clone()),
-                    size: asset.size,
-                    label: format!("asset {logical_name}"),
-                },
-            );
-        }
-
-        for library in &metadata.libraries {
-            if !library_allowed(library.rules.as_ref()) {
-                continue;
-            }
-
-            if let Some(downloads) = &library.downloads {
-                if let Some(artifact) = &downloads.artifact {
-                    let path = artifact
-                        .path
-                        .clone()
-                        .unwrap_or(maven_path(&library.name)?);
-                    add_task(
-                        &mut tasks,
-                        &mut seen,
-                        DownloadTask {
-                            url: artifact.url.clone(),
-                            destination: instance_root.join("libraries").join(path),
-                            sha1: Some(artifact.sha1.clone()),
-                            size: artifact.size,
-                            label: format!("library {}", library.name),
-                        },
-                    );
-                }
-            } else {
-                let path = maven_path(&library.name)?;
-                let base = library.url.as_deref().unwrap_or(DEFAULT_LIBRARY_BASE_URL);
-                add_task(
-                    &mut tasks,
-                    &mut seen,
-                    DownloadTask {
-                        url: join_url(base, &path),
-                        destination: instance_root.join("libraries").join(path),
-                        sha1: None,
-                        size: 0,
-                        label: format!("library {}", library.name),
-                    },
-                );
-            }
-
-            if let (Some(natives), Some(downloads)) = (&library.natives, &library.downloads) {
-                if let Some(template) = natives.get(minecraft_os_name()) {
-                    let classifier = template.replace("${arch}", minecraft_arch_token());
-                    if let Some(descriptor) = downloads
-                        .classifiers
-                        .as_ref()
-                        .and_then(|classifiers| classifiers.get(&classifier))
-                    {
-                        let path = descriptor
-                            .path
-                            .clone()
-                            .unwrap_or_else(|| format!("natives/{}/{}.jar", metadata.id, classifier));
-                        let destination = instance_root.join("libraries").join(path);
-                        add_task(
-                            &mut tasks,
-                            &mut seen,
-                            DownloadTask {
-                                url: descriptor.url.clone(),
-                                destination: destination.clone(),
-                                sha1: Some(descriptor.sha1.clone()),
-                                size: descriptor.size,
-                                label: format!("native library {}", library.name),
-                            },
-                        );
-                        native_archives.push(NativeArchive {
-                            path: destination,
-                            excludes: library
-                                .extract
-                                .as_ref()
-                                .map(|extract| extract.exclude.clone())
-                                .unwrap_or_default(),
-                        });
-                    }
-                }
-            }
-        }
-
-        if let Some(logging) = &metadata.logging {
-            let file = &logging.client.file;
-            let destination = instance_root
-                .join("assets")
-                .join("log_configs")
-                .join(
-                    file.id
-                        .clone()
-                        .or_else(|| file.path.clone())
-                        .unwrap_or_else(|| "client.xml".to_string()),
-                );
-            add_task(
-                &mut tasks,
-                &mut seen,
-                DownloadTask {
-                    url: file.url.clone(),
-                    destination,
-                    sha1: Some(file.sha1.clone()),
-                    size: file.size,
-                    label: "logging configuration".to_string(),
-                },
-            );
-        }
-
-        let total_bytes: u64 = tasks.iter().map(|task| task.size).sum();
-        let total_files = tasks.len();
-        let downloaded = Arc::new(AtomicU64::new(0));
-        let completed_files = Arc::new(AtomicUsize::new(0));
-        emit_progress(
-            &app,
-            "downloading",
-            format!("Checking {} required files…", total_files),
-            0,
-            total_bytes,
-            0,
-            total_files,
-        );
-
-        let results = futures_util::stream::iter(tasks.into_iter().map(|task| {
-            ensure_download(
-                state.client.clone(),
-                task,
-                app.clone(),
-                downloaded.clone(),
-                completed_files.clone(),
-                total_bytes,
-                total_files,
-                verify_existing,
-            )
-        }))
-        .buffer_unordered(8)
-        .collect::<Vec<_>>()
-        .await;
-
-        for result in results {
-            result?;
-        }
-
-        if asset_index.virtual_assets || asset_index.map_to_resources {
-            emit_progress(
-                &app,
-                "assets",
-                "Preparing legacy asset layout…",
-                downloaded.load(Ordering::Relaxed),
-                total_bytes,
-                completed_files.load(Ordering::Relaxed),
-                total_files,
-            );
-            materialize_legacy_assets(&asset_index, &metadata.asset_index.id, &instance_root)?;
-        }
-
-        emit_progress(
-            &app,
-            "extracting",
-            "Extracting native libraries…",
-            downloaded.load(Ordering::Relaxed),
-            total_bytes,
-            completed_files.load(Ordering::Relaxed),
-            total_files,
-        );
-        extract_natives(&native_archives, &instance_root.join("natives"))?;
-
-        let java_major_version = metadata
-            .java_version
-            .as_ref()
-            .map(|java| java.major_version)
-            .unwrap_or(8);
-        let installed_manifest = InstalledVersionManifest {
-            version: metadata.id.clone(),
-            main_class: metadata.main_class.clone(),
-            java_major_version,
-            installed_at: unix_timestamp(),
-            files: total_files,
-            downloaded_bytes: downloaded.load(Ordering::Relaxed),
-        };
-        write_json(&instance_root.join("installed-version.json"), &installed_manifest)?;
-
-        emit_progress(
-            &app,
-            "complete",
-            format!("Minecraft {} files are ready.", metadata.id),
-            total_bytes,
-            total_bytes,
-            total_files,
-            total_files,
-        );
-
-        Ok::<InstallResult, String>(InstallResult {
-            instance_id: instance.id.clone(),
-            version: metadata.id,
-            java_major_version,
-            downloaded_bytes: installed_manifest.downloaded_bytes,
-            files: total_files,
-            message: format!(
-                "Minecraft {} files are ready. Java {} is required.",
-                installed_manifest.version, java_major_version
-            ),
-        })
-    }
+    let install_result = install_vanilla_files(
+        app.clone(),
+        state,
+        &instance_root,
+        &instance.minecraft_version,
+        &instance.id,
+        verify_existing,
+    )
     .await;
 
     match install_result {
@@ -2902,6 +2579,373 @@ async fn install_vanilla_internal(
     }
 }
 
+
+
+/// Downloads and verifies one vanilla Minecraft version into `instance_root` using the official
+/// launcher's layout (`versions/`, `libraries/`, `assets/`). Shared by Java Edition profiles and
+/// Ruby Edition's asset preparation.
+async fn install_vanilla_files(
+    app: AppHandle,
+    state: &AppState,
+    instance_root: &Path,
+    minecraft_version: &str,
+    result_id: &str,
+    verify_existing: bool,
+) -> Result<InstallResult, String> {
+    let version_dir = instance_root
+        .join("versions")
+        .join(&minecraft_version);
+    let version_json_path = version_dir.join(format!("{}.json", minecraft_version));
+
+    let metadata: VersionMetadata = if !verify_existing && version_json_path.exists() {
+        let bytes = fs::read(&version_json_path).map_err(|error| {
+            format!("Could not read local version metadata {}: {error}", version_json_path.display())
+        })?;
+        serde_json::from_slice(&bytes)
+            .map_err(|error| format!("Local version metadata is invalid: {error}"))?
+    } else {
+        let manifest: VersionManifest = fetch_json(
+            &state.client,
+            VERSION_MANIFEST_URL,
+            "Minecraft version catalog",
+        )
+        .await?;
+        let version_entry = manifest
+            .versions
+            .into_iter()
+            .find(|version| version.id == minecraft_version)
+            .ok_or_else(|| {
+                format!(
+                    "Minecraft version '{}' was not found in Mojang's current version catalog.",
+                    minecraft_version
+                )
+            })?;
+
+        emit_progress(&app, "metadata", "Loading version metadata…", 0, 0, 0, 0);
+        let version_response = state
+            .client
+            .get(&version_entry.url)
+            .send()
+            .await
+            .map_err(|error| format!("Could not download version metadata: {error}"))?;
+        let version_status = version_response.status();
+        if !version_status.is_success() {
+            let body = version_response.text().await.unwrap_or_default();
+            return Err(format!(
+                "Could not download version metadata ({version_status}): {body}"
+            ));
+        }
+        let version_bytes = version_response
+            .bytes()
+            .await
+            .map_err(|error| format!("Could not read version metadata: {error}"))?;
+        if !sha1_hex_bytes(&version_bytes).eq_ignore_ascii_case(&version_entry.sha1) {
+            return Err("Version metadata failed SHA-1 verification.".to_string());
+        }
+        let parsed: VersionMetadata = serde_json::from_slice(&version_bytes)
+            .map_err(|error| format!("Version metadata is invalid: {error}"))?;
+        if parsed.id != version_entry.id {
+            return Err(format!(
+                "Version metadata ID mismatch. Expected '{}', received '{}'.",
+                version_entry.id, parsed.id
+            ));
+        }
+        write_bytes_atomic(&version_json_path, &version_bytes)?;
+        parsed
+    };
+
+    if metadata.id != minecraft_version {
+        return Err(format!(
+            "The local version metadata belongs to '{}' instead of '{}'. Run Repair to replace it.",
+            metadata.id, minecraft_version
+        ));
+    }
+
+    let asset_index_path = instance_root
+        .join("assets")
+        .join("indexes")
+        .join(format!("{}.json", metadata.asset_index.id));
+    let asset_index: AssetIndex = if !verify_existing && asset_index_path.exists() {
+        let bytes = fs::read(&asset_index_path).map_err(|error| {
+            format!("Could not read local asset index {}: {error}", asset_index_path.display())
+        })?;
+        serde_json::from_slice(&bytes)
+            .map_err(|error| format!("Local asset index is invalid: {error}"))?
+    } else {
+        emit_progress(&app, "metadata", "Loading asset index…", 0, 0, 0, 0);
+        let asset_response = state
+            .client
+            .get(&metadata.asset_index.url)
+            .send()
+            .await
+            .map_err(|error| format!("Could not download asset index: {error}"))?;
+        let asset_status = asset_response.status();
+        if !asset_status.is_success() {
+            let body = asset_response.text().await.unwrap_or_default();
+            return Err(format!("Could not download asset index ({asset_status}): {body}"));
+        }
+        let asset_bytes = asset_response
+            .bytes()
+            .await
+            .map_err(|error| format!("Could not read asset index: {error}"))?;
+        if !sha1_hex_bytes(&asset_bytes).eq_ignore_ascii_case(&metadata.asset_index.sha1) {
+            return Err("Asset index failed SHA-1 verification.".to_string());
+        }
+        if asset_bytes.len() as u64 != metadata.asset_index.size {
+            return Err("Asset index failed size verification.".to_string());
+        }
+        let parsed: AssetIndex = serde_json::from_slice(&asset_bytes)
+            .map_err(|error| format!("Asset index is invalid: {error}"))?;
+        write_bytes_atomic(&asset_index_path, &asset_bytes)?;
+        parsed
+    };
+
+    let mut tasks = Vec::new();
+    let mut seen = HashSet::new();
+    let mut native_archives = Vec::new();
+
+    add_task(
+        &mut tasks,
+        &mut seen,
+        DownloadTask {
+            url: metadata.downloads.client.url.clone(),
+            destination: version_dir.join(format!("{}.jar", metadata.id)),
+            sha1: Some(metadata.downloads.client.sha1.clone()),
+            size: metadata.downloads.client.size,
+            label: format!("Minecraft {} client", metadata.id),
+        },
+    );
+
+    if let Some(mappings) = &metadata.downloads.client_mappings {
+        add_task(
+            &mut tasks,
+            &mut seen,
+            DownloadTask {
+                url: mappings.url.clone(),
+                destination: version_dir.join(format!("{}-client-mappings.txt", metadata.id)),
+                sha1: Some(mappings.sha1.clone()),
+                size: mappings.size,
+                label: format!("Minecraft {} client mappings", metadata.id),
+            },
+        );
+    }
+
+    for (logical_name, asset) in &asset_index.objects {
+        let prefix = asset.hash.get(0..2).ok_or_else(|| {
+            format!("Asset '{logical_name}' has an invalid content hash.")
+        })?;
+        add_task(
+            &mut tasks,
+            &mut seen,
+            DownloadTask {
+                url: format!("{ASSET_BASE_URL}/{prefix}/{}", asset.hash),
+                destination: instance_root
+                    .join("assets")
+                    .join("objects")
+                    .join(prefix)
+                    .join(&asset.hash),
+                sha1: Some(asset.hash.clone()),
+                size: asset.size,
+                label: format!("asset {logical_name}"),
+            },
+        );
+    }
+
+    for library in &metadata.libraries {
+        if !library_allowed(library.rules.as_ref()) {
+            continue;
+        }
+
+        if let Some(downloads) = &library.downloads {
+            if let Some(artifact) = &downloads.artifact {
+                let path = artifact
+                    .path
+                    .clone()
+                    .unwrap_or(maven_path(&library.name)?);
+                add_task(
+                    &mut tasks,
+                    &mut seen,
+                    DownloadTask {
+                        url: artifact.url.clone(),
+                        destination: instance_root.join("libraries").join(path),
+                        sha1: Some(artifact.sha1.clone()),
+                        size: artifact.size,
+                        label: format!("library {}", library.name),
+                    },
+                );
+            }
+        } else {
+            let path = maven_path(&library.name)?;
+            let base = library.url.as_deref().unwrap_or(DEFAULT_LIBRARY_BASE_URL);
+            add_task(
+                &mut tasks,
+                &mut seen,
+                DownloadTask {
+                    url: join_url(base, &path),
+                    destination: instance_root.join("libraries").join(path),
+                    sha1: None,
+                    size: 0,
+                    label: format!("library {}", library.name),
+                },
+            );
+        }
+
+        if let (Some(natives), Some(downloads)) = (&library.natives, &library.downloads) {
+            if let Some(template) = natives.get(minecraft_os_name()) {
+                let classifier = template.replace("${arch}", minecraft_arch_token());
+                if let Some(descriptor) = downloads
+                    .classifiers
+                    .as_ref()
+                    .and_then(|classifiers| classifiers.get(&classifier))
+                {
+                    let path = descriptor
+                        .path
+                        .clone()
+                        .unwrap_or_else(|| format!("natives/{}/{}.jar", metadata.id, classifier));
+                    let destination = instance_root.join("libraries").join(path);
+                    add_task(
+                        &mut tasks,
+                        &mut seen,
+                        DownloadTask {
+                            url: descriptor.url.clone(),
+                            destination: destination.clone(),
+                            sha1: Some(descriptor.sha1.clone()),
+                            size: descriptor.size,
+                            label: format!("native library {}", library.name),
+                        },
+                    );
+                    native_archives.push(NativeArchive {
+                        path: destination,
+                        excludes: library
+                            .extract
+                            .as_ref()
+                            .map(|extract| extract.exclude.clone())
+                            .unwrap_or_default(),
+                    });
+                }
+            }
+        }
+    }
+
+    if let Some(logging) = &metadata.logging {
+        let file = &logging.client.file;
+        let destination = instance_root
+            .join("assets")
+            .join("log_configs")
+            .join(
+                file.id
+                    .clone()
+                    .or_else(|| file.path.clone())
+                    .unwrap_or_else(|| "client.xml".to_string()),
+            );
+        add_task(
+            &mut tasks,
+            &mut seen,
+            DownloadTask {
+                url: file.url.clone(),
+                destination,
+                sha1: Some(file.sha1.clone()),
+                size: file.size,
+                label: "logging configuration".to_string(),
+            },
+        );
+    }
+
+    let total_bytes: u64 = tasks.iter().map(|task| task.size).sum();
+    let total_files = tasks.len();
+    let downloaded = Arc::new(AtomicU64::new(0));
+    let completed_files = Arc::new(AtomicUsize::new(0));
+    emit_progress(
+        &app,
+        "downloading",
+        format!("Checking {} required files…", total_files),
+        0,
+        total_bytes,
+        0,
+        total_files,
+    );
+
+    let results = futures_util::stream::iter(tasks.into_iter().map(|task| {
+        ensure_download(
+            state.client.clone(),
+            task,
+            app.clone(),
+            downloaded.clone(),
+            completed_files.clone(),
+            total_bytes,
+            total_files,
+            verify_existing,
+        )
+    }))
+    .buffer_unordered(8)
+    .collect::<Vec<_>>()
+    .await;
+
+    for result in results {
+        result?;
+    }
+
+    if asset_index.virtual_assets || asset_index.map_to_resources {
+        emit_progress(
+            &app,
+            "assets",
+            "Preparing legacy asset layout…",
+            downloaded.load(Ordering::Relaxed),
+            total_bytes,
+            completed_files.load(Ordering::Relaxed),
+            total_files,
+        );
+        materialize_legacy_assets(&asset_index, &metadata.asset_index.id, &instance_root)?;
+    }
+
+    emit_progress(
+        &app,
+        "extracting",
+        "Extracting native libraries…",
+        downloaded.load(Ordering::Relaxed),
+        total_bytes,
+        completed_files.load(Ordering::Relaxed),
+        total_files,
+    );
+    extract_natives(&native_archives, &instance_root.join("natives"))?;
+
+    let java_major_version = metadata
+        .java_version
+        .as_ref()
+        .map(|java| java.major_version)
+        .unwrap_or(8);
+    let installed_manifest = InstalledVersionManifest {
+        version: metadata.id.clone(),
+        main_class: metadata.main_class.clone(),
+        java_major_version,
+        installed_at: unix_timestamp(),
+        files: total_files,
+        downloaded_bytes: downloaded.load(Ordering::Relaxed),
+    };
+    write_json(&instance_root.join("installed-version.json"), &installed_manifest)?;
+
+    emit_progress(
+        &app,
+        "complete",
+        format!("Minecraft {} files are ready.", metadata.id),
+        total_bytes,
+        total_bytes,
+        total_files,
+        total_files,
+    );
+
+    Ok::<InstallResult, String>(InstallResult {
+        instance_id: result_id.to_string(),
+        version: metadata.id,
+        java_major_version,
+        downloaded_bytes: installed_manifest.downloaded_bytes,
+        files: total_files,
+        message: format!(
+            "Minecraft {} files are ready. Java {} is required.",
+            installed_manifest.version, java_major_version
+        ),
+    })
+}
 
 #[tauri::command]
 async fn install_vanilla(
@@ -4352,7 +4396,14 @@ pub fn run() {
             open_external_url,
             play_instance,
             exit_launcher,
-            read_launcher_log
+            read_launcher_log,
+            ruby_edition::ruby_edition_status,
+            ruby_edition::ruby_edition_refresh,
+            ruby_edition::ruby_edition_install,
+            ruby_edition::ruby_edition_cancel,
+            ruby_edition::ruby_edition_play,
+            ruby_edition::ruby_edition_uninstall,
+            ruby_edition::ruby_edition_open_folder
         ])
         .run(tauri::generate_context!())
         .expect("error while running Ruby Launcher");

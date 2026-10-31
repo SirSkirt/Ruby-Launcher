@@ -1,7 +1,7 @@
 {
   "name": "ruby-launcher",
   "private": true,
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "Ruby Launcher - controller-first Minecraft Java launcher with managed Java, secure Microsoft sign-in and Ruby Module Loader.",
   "author": "QTech Studios",
   "license": "UNLICENSED",

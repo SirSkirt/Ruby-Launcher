@@ -1,5 +1,23 @@
 # Ruby Launcher Changelog
 
+## b2026.23 — Minecraft: Ruby Edition Home & Interface Modes
+
+- Rebuilt Home around **Minecraft: Ruby Edition** using the Shelf design: a large Play button with a Stable/Nightly channel dropdown, install status, a build info card and a Quick Launch shelf for both channels.
+- Play becomes **Install**, **Installing… n%**, **Update** or **Check again** depending on the selected channel's state. Install progress shows Download → Verify → Extract → Prepare steps, live download speed and time left.
+- Added the Ruby Edition backend (`src-tauri/src/ruby_edition.rs`):
+  - Finds the newest Stable (`main`) and Nightly (`nightly`) builds from the Ruby Edition GitHub releases (`ruby-edition-<branch>-<run>-<sha8>` tags) and caches them for offline use.
+  - Downloads the package for Windows x64 or Linux x86-64, verifies it against the release's `SHA256SUMS`, extracts it to a staging folder and swaps it in only after preparation succeeds.
+  - Prepares game resources with `horizon-prepare` from the signed-in owner's own Minecraft files (fetched through the existing vanilla installer) and a Java runtime. No Mojang files are bundled.
+  - Keeps each channel in its own folder (`games/ruby-edition/<channel>/` with `bin/`, `game/`, `home/`), so updating one channel never touches the other or any worlds.
+  - Launches through Ruby Edition's Launch API (`--resources`, `--game-dir`, `--home`, `--session-stdin`), handing over the Microsoft session on stdin, with tray minimise/restore, playtime tracking and cancel, uninstall (keep or delete worlds) and open-folder commands.
+- Added **Controller** and **Desktop** interface modes in Settings. Desktop mode is a decorated, resizable window with a compact, mouse-friendly layout; switching modes applies immediately without a restart. The controller startup screen now offers a "Use mouse and keyboard" button that switches to Desktop mode.
+- Replaced the sidebar with LB/RB top tabs (Home · Library · Settings), added contextual controller button hints, X to switch channel and Y for an Options menu on any Ruby Edition item.
+- Added a Library page listing both Ruby Edition channels with their install state and playtime.
+- Settings now save automatically and use toggles, sliders and left/right pickers instead of desktop form controls.
+- Fixed the "Ask for a controller on startup" screen being dismissed on the first frame when no controller was connected.
+- Java Edition profiles, versions and Modrinth modpacks remain in the code but are hidden behind `JAVA_EDITION_UI` in `src-web/app.js` until Java Edition selection is reintroduced.
+- Updated the application version to 0.23.0 and the build ID to b2026.23.
+
 ## b2026.20 — Safe Held Use
 
 - Removed the 50 ms manual `startUseItem()` repeat loop that could place several blocks from one left-trigger press.
