@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ruby Edition · Home</title>
+<link rel="stylesheet" href="./shared.css">
+<style>
+  .hero { position: absolute; inset: 0; }
+  .hero .art { position: absolute; inset: 0; }
+  .hero::after {
+    content: ""; position: absolute; inset: 0;
+    background:
+      linear-gradient(90deg, rgba(12,8,9,.94) 0%, rgba(12,8,9,.6) 40%, rgba(12,8,9,.1) 70%),
+      linear-gradient(0deg, rgba(12,8,9,1) 0%, rgba(12,8,9,.7) 30%, rgba(12,8,9,0) 55%),
+      linear-gradient(180deg, rgba(12,8,9,.75) 0%, rgba(12,8,9,0) 18%);
+  }
+
+  /* ---------- Featured game ---------- */
+  .info { position: absolute; left: 96px; top: 150px; width: 1060px; z-index: 3; }
+  .info .eyebrow { font-size: 22px; font-weight: 800; letter-spacing: .28em; color: #ffb3c4; }
+  .info h1 { margin-top: 6px; font-size: 112px; line-height: .95; font-weight: 900; letter-spacing: -0.045em; text-shadow: 0 6px 30px rgba(0,0,0,.5); }
+  .info .chips { display: flex; gap: 12px; margin-top: 22px; }
+  .chip.nightly { background: rgba(160, 90, 255, .22); color: #dcc4ff; }
+  .chip .dot.off { background: transparent; border: 2px solid var(--muted); }
+
+  .actions { position: relative; display: flex; align-items: stretch; gap: 6px; margin-top: 30px; }
+  .actions .btn.primary { min-width: 340px; height: 92px; border-radius: 24px 10px 10px 24px; position: relative; overflow: hidden; }
+  .actions .btn.primary .label { position: relative; z-index: 1; display: flex; align-items: center; gap: 14px; }
+  .actions .btn.primary svg { width: 32px; height: 32px; }
+  .actions .btn.primary.busy { background: rgba(255,255,255,.12); }
+  .actions .btn.primary.busy .fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(180deg, var(--ruby-bright), var(--ruby)); transition: width 300ms; }
+  .actions .btn.primary.disabled { background: rgba(255,255,255,.08); color: var(--subtle); }
+  .channel {
+    width: 290px; height: 92px; border-radius: 10px 24px 24px 10px; padding: 0 26px;
+    display: grid; grid-template-columns: 1fr auto; align-items: center; text-align: left;
+    background: rgba(255,255,255,.12); backdrop-filter: blur(14px);
+  }
+  .channel small { display: block; font-size: 17px; color: var(--muted); font-weight: 600; }
+  .channel strong { display: block; font-size: 28px; font-weight: 800; }
+  .channel .caret { font-size: 24px; color: var(--muted); }
+  .actions .opts { margin-left: 14px; height: 92px; }
+
+  .sub { margin-top: 22px; font-size: 22px; line-height: 1.45; color: var(--muted); max-width: 900px; }
+  .sub b { color: var(--text); font-weight: 600; }
+
+  /* Install / update stepper */
+  .steps { display: none; margin-top: 24px; gap: 10px; }
+  .steps.on { display: flex; }
+  .step { display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 18px; border-radius: 999px; font-size: 19px; font-weight: 600; background: rgba(255,255,255,.07); color: var(--subtle); }
+  .step::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; }
+  .step.done { color: var(--ok); } .step.done::before { background: currentColor; }
+  .step.now { color: var(--text); background: rgba(213,43,86,.25); } .step.now::before { border-color: var(--ruby-bright); background: var(--ruby-bright); box-shadow: 0 0 0 5px rgba(255,84,121,.25); }
+  .progress-line { display: none; margin-top: 14px; font-size: 20px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .progress-line.on { display: block; }
+
+  /* Channel dropdown */
+  .menu {
+    position: absolute; left: 346px; top: 104px; width: 560px; padding: 12px; z-index: 30; display: none;
+    border-radius: 28px; background: rgba(28,19,23,.95); backdrop-filter: blur(24px);
+    border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,.65);
+  }
+  .menu.is-open { display: block; }
+  .menu button { width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px; padding: 18px 22px; border-radius: 18px; text-align: left; }
+  .menu strong { display: block; font-size: 26px; }
+  .menu small { display: block; margin-top: 4px; font-size: 19px; color: var(--muted); }
+  .menu .check { font-size: 26px; color: var(--ruby-bright); opacity: 0; }
+  .menu button.current .check { opacity: 1; }
+  .menu button.is-focused { background: var(--text); color: #1a0e12; transform: none; box-shadow: none; }
+  .menu button.is-focused small { color: #6b5960; }
+  .menu button.is-focused .check { color: var(--ruby); }
+
+  /* Build info card */
+  .build {
+    position: absolute; right: 64px; top: 150px; width: 470px; z-index: 3; padding: 28px 30px;
+    border-radius: 28px; background: rgba(20,13,16,.86); backdrop-filter: blur(18px); border: 1px solid var(--line);
+  }
+  .build h3 { font-size: 20px; font-weight: 700; color: var(--muted); margin-bottom: 14px; }
+  .build dl { display: grid; grid-template-columns: auto 1fr; gap: 12px 22px; margin: 0; font-size: 21px; }
+  .build dt { color: var(--subtle); }
+  .build dd { margin: 0; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .build dd code { font-family: "JetBrains Mono", monospace; font-size: 19px; }
+  .build .path { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 17px; color: var(--subtle); font-family: "JetBrains Mono", monospace; }
+
+  /* ---------- Quick launch shelf ---------- */
+  .shelf { position: absolute; left: 96px; right: 0; bottom: 104px; z-index: 3; }
+  .shelf h2 { font-size: 24px; font-weight: 700; color: var(--muted); margin-bottom: 20px; }
+  .row { display: flex; gap: 28px; align-items: flex-end; }
+  .tile { flex: none; width: 360px; text-align: left; }
+  .tile .thumb { height: 220px; border-radius: 24px; position: relative; overflow: hidden; background-color: var(--surface); }
+  .tile .thumb .badge { position: absolute; left: 14px; top: 14px; }
+  .tile .thumb .name { position: absolute; left: 20px; bottom: 16px; font-size: 28px; font-weight: 800; text-shadow: 0 2px 12px rgba(0,0,0,.7); }
+  .tile .thumb .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 8px; background: rgba(0,0,0,.4); display: none; }
+  .tile .thumb .bar i { position: absolute; inset: 0 auto 0 0; background: var(--ruby-bright); }
+  .tile.installing .thumb .bar { display: block; }
+  .tile .label { margin-top: 14px; font-size: 20px; font-weight: 600; color: var(--muted); }
+  .tile.is-focused { box-shadow: none; }
+  .tile.is-focused .thumb { box-shadow: var(--focus-ring); }
+  .tile.is-focused .label { color: var(--text); }
+  .tile.util { width: 220px; }
+  .tile.util .thumb { display: grid; place-items: center; background: rgba(255,255,255,.06); }
+  .tile.util svg { width: 64px; height: 64px; stroke: var(--muted); fill: none; stroke-width: 1.6; }
+  .tile.selected .thumb::after { content: ""; position: absolute; right: 16px; top: 16px; width: 14px; height: 14px; border-radius: 50%; background: var(--text); box-shadow: 0 0 0 4px rgba(0,0,0,.35); }
+</style>
+</head>
+<body>
+  <section class="hero"><div class="art cover" id="heroArt"></div></section>
+
+  <section class="info">
+    <div class="eyebrow">MINECRAFT</div>
+    <h1>Ruby Edition</h1>
+    <div class="chips" id="chips"></div>
+
+    <div class="actions">
+      <button class="btn primary focusable" id="play"><span class="fill"></span><span class="label" id="playLabel"></span></button>
+      <button class="channel focusable" id="channelButton"><span><small>Channel</small><strong id="channelValue">Stable</strong></span><span class="caret">▾</span></button>
+      <button class="btn opts focusable" id="opts"><span class="glyph">Y</span>Options</button>
+
+      <div class="menu focus-trap" id="channelMenu" role="listbox">
+        <button class="focusable" data-channel="stable"><span><strong>Ruby Edition — Stable</strong><small id="menuStable"></small></span><span class="check">✓</span></button>
+        <button class="focusable" data-channel="nightly"><span><strong>Ruby Edition — Nightly</strong><small id="menuNightly"></small></span><span class="check">✓</span></button>
+      </div>
+    </div>
+
+    <p class="sub" id="sub"></p>
+    <div class="steps" id="steps">
+      <span class="step" data-step="0">Download</span>
+      <span class="step" data-step="1">Verify</span>
+      <span class="step" data-step="2">Extract</span>
+      <span class="step" data-step="3">Prepare Minecraft 26.3 files</span>
+    </div>
+    <div class="progress-line" id="progressLine"></div>
+  </section>
+
+  <aside class="build">
+    <h3 id="buildTitle">Build info</h3>
+    <dl id="buildInfo"></dl>
+    <div class="path" id="buildPath"></div>
+  </aside>
+
+  <section class="shelf">
+    <h2>Quick launch</h2>
+    <div class="row">
+      <button class="tile focusable" data-channel="stable"><div class="thumb cover" data-cover="4,meadow"><span class="chip badge" id="tileStableBadge"></span><span class="name">Stable</span><span class="bar"><i id="tileStableBar"></i></span></div><div class="label" id="tileStableLabel"></div></button>
+      <button class="tile focusable" data-channel="nightly"><div class="thumb cover" data-cover="17,rubynight"><span class="chip badge" id="tileNightlyBadge"></span><span class="name">Nightly</span><span class="bar"><i id="tileNightlyBar"></i></span></div><div class="label" id="tileNightlyLabel"></div></button>
+      <button class="tile util focusable"><div class="thumb"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg></div><div class="label">Logs</div></button>
+      <button class="tile util focusable"><div class="thumb"><svg viewBox="0 0 24 24"><path d="M3 7h7l2 2h9v10H3zM3 7V5h6l2 2"/></svg></div><div class="label">Manage installs</div></button>
+    </div>
+  </section>
+
+<script type="module">
+  import { paintCovers, enableNav, renderChrome, setHints } from "./shared.js";
+
+  // Mock data, shaped like what the launcher would get from GitHub releases.
+  // Tags follow the workflow: ruby-edition-<branch>-<run>-<sha8>. Nightly releases are prereleases.
+  const params = new URLSearchParams(location.search);
+  const channels = {
+    stable: {
+      name: "Stable", branch: "main", cover: "4,meadow,96,54", chip: "",
+      latest: { run: 42, sha: "3fa91c2e", published: "Oct 28" },
+      installed: { run: 42, sha: "3fa91c2e" },
+      state: "ready", progress: 0,
+    },
+    nightly: {
+      name: "Nightly", branch: "nightly", cover: "17,rubynight,96,54", chip: "nightly",
+      latest: { run: 57, sha: "9b0d44a1", published: "3 hours ago" },
+      installed: null,
+      state: "install", progress: 0,
+    },
+  };
+  let selected = params.get("channel") === "nightly" ? "nightly" : "stable";
+  if (params.get("state")) channels[selected].state = params.get("state");
+  if (channels[selected].state === "update") channels[selected].installed = { run: channels[selected].latest.run - 3, sha: "c01d5e77" };
+  if (channels[selected].state === "none") channels[selected].latest = null;
+  if (channels[selected].state === "installing") channels[selected].progress = 0.46;
+
+  const ICON = {
+    play: '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>',
+    install: '<svg viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>',
+    update: '<svg viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>',
+  };
+
+  function statusText(c) {
+    if (!c.latest) return "No build published yet";
+    return {
+      ready: () => `Installed · build #${c.installed.run}`,
+      update: () => `Update available · #${c.latest.run}`,
+      install: () => "Not installed",
+      installing: () => `Installing · ${Math.round(c.progress * 100)}%`,
+      none: () => "No build published yet",
+    }[c.state]();
+  }
+
+  function render() {
+    const c = channels[selected];
+    heroArt.dataset.cover = c.cover;
+    paintCovers(document.querySelector(".hero"));
+
+    const statusChip = {
+      ready: '<span class="chip"><span class="dot"></span>Ready to play</span>',
+      update: '<span class="chip"><span class="dot warn"></span>Update available</span>',
+      install: '<span class="chip"><span class="dot off"></span>Not installed</span>',
+      installing: '<span class="chip"><span class="dot warn"></span>Installing</span>',
+      none: '<span class="chip"><span class="dot off"></span>Waiting for first build</span>',
+    }[c.state];
+    chips.innerHTML =
+      `<span class="chip ${c.chip || "ruby"}">${c.name}${selected === "nightly" ? " · Experimental" : ""}</span>` +
+      (c.latest ? `<span class="chip">Build #${(c.installed ?? c.latest).run}</span>` : "") +
+      `<span class="chip">Minecraft 26.3</span>` + statusChip;
+
+    const btn = play;
+    btn.classList.toggle("busy", c.state === "installing");
+    btn.classList.toggle("disabled", c.state === "none");
+    btn.querySelector(".fill").style.width = c.state === "installing" ? `${c.progress * 100}%` : "0";
+    playLabel.innerHTML = {
+      ready: `${ICON.play}Play`,
+      update: `${ICON.update}Update`,
+      install: `${ICON.install}Install`,
+      installing: `Installing… ${Math.round(c.progress * 100)}%`,
+      none: "No build yet",
+    }[c.state];
+    channelValue.textContent = c.name;
+
+    const other = selected === "stable" ? "Nightly" : "Stable";
+    sub.innerHTML = {
+      ready: () => `Last played yesterday · 4 h total. Worlds and settings for ${c.name} are kept separate from ${other}.`,
+      update: () => `<b>Build #${c.latest.run}</b> is out (you have #${c.installed.run}). Updating keeps your worlds and settings. Press <b>Y</b> to play your current build instead.`,
+      install: () => `Downloads Ruby Edition ${c.name} for Windows (≈84 MB), checks it against the release's SHA-256, then prepares Minecraft 26.3 files from <b>your own account</b>. Your ${other} install isn't touched.`,
+      installing: () => "",
+      none: () => `No ${c.name} release has been published on GitHub yet. It'll show up here as soon as the build workflow finishes.`,
+    }[c.state]();
+    sub.style.display = c.state === "installing" ? "none" : "";
+    steps.classList.toggle("on", c.state === "installing");
+    progressLine.classList.toggle("on", c.state === "installing");
+    if (c.state === "installing") {
+      const stage = 0;
+      steps.querySelectorAll(".step").forEach((s) => {
+        const i = Number(s.dataset.step);
+        s.className = "step" + (i < stage ? " done" : i === stage ? " now" : "");
+      });
+      progressLine.textContent = "ruby-edition-windows-x64.zip · 38.6 / 84.0 MB · 6.2 MB/s · about 8 s left";
+    }
+
+    buildTitle.textContent = `${c.name} channel`;
+    buildInfo.innerHTML = c.latest
+      ? `<dt>Branch</dt><dd><code>${c.branch}</code></dd>
+         <dt>Latest build</dt><dd>#${c.latest.run} · <code>${c.latest.sha}</code></dd>
+         <dt>Published</dt><dd>${c.latest.published}</dd>
+         <dt>Installed</dt><dd>${c.installed ? `#${c.installed.run} · <code>${c.installed.sha}</code>` : "—"}</dd>
+         <dt>Game data</dt><dd>Minecraft 26.3</dd>`
+      : `<dt>Branch</dt><dd><code>${c.branch}</code></dd><dt>Latest build</dt><dd>None yet</dd><dt>Installed</dt><dd>—</dd>`;
+    buildPath.textContent = `Installs to games/ruby-edition/${selected}/`;
+
+    for (const [key, ch] of Object.entries(channels)) {
+      const cap = key[0].toUpperCase() + key.slice(1);
+      const badge = document.getElementById(`tile${cap}Badge`);
+      const dot = { ready: "", update: "warn", install: "off", installing: "warn", none: "off" }[ch.state];
+      badge.innerHTML = `<span class="dot ${dot}"></span>${statusText(ch)}`;
+      document.getElementById(`tile${cap}Label`).textContent = ch.latest ? `Build #${ch.latest.run} · ${ch.latest.published}` : "Waiting for first build";
+      document.getElementById(`tile${cap}Bar`).style.width = `${ch.progress * 100}%`;
+      const tile = document.querySelector(`.tile[data-channel="${key}"]`);
+      tile.classList.toggle("installing", ch.state === "installing");
+      tile.classList.toggle("selected", key === selected);
+    }
+    document.getElementById("menuStable").textContent = statusText(channels.stable);
+    document.getElementById("menuNightly").textContent = statusText(channels.nightly);
+    channelMenu.querySelectorAll("button").forEach((b) => b.classList.toggle("current", b.dataset.channel === selected));
+    updateHints();
+  }
+
+  function primaryVerb() {
+    return { ready: "Play", update: "Update", install: "Install", installing: "Install", none: "Check again" }[channels[selected].state];
+  }
+
+  function updateHints(el = nav?.current()) {
+    if (channelMenu.classList.contains("is-open")) return setHints([["A", "Choose"], ["B", "Close"]]);
+    if (el?.id === "channelButton") return setHints([["A", "Change channel"], ["X", "Switch channel"], ["B", "Back"]]);
+    if (el?.classList.contains("util")) return setHints([["A", "Open"], ["B", "Back"]]);
+    const busy = channels[selected].state === "installing";
+    setHints([["A", busy ? "Show progress" : primaryVerb()], busy ? ["B", "Cancel"] : ["X", "Switch channel"], ["Y", "Options"], ["☰", "Menu", "wide"]]);
+  }
+
+  function openMenu() {
+    channelMenu.classList.add("is-open");
+    nav.focus(channelMenu.querySelector(`[data-channel="${selected}"]`));
+    updateHints();
+  }
+  function closeMenu() {
+    channelMenu.classList.remove("is-open");
+    nav.focus(channelButton);
+  }
+  function select(key) {
+    if (!channels[key] || key === selected) return;
+    selected = key;
+    render();
+  }
+
+  channelButton.addEventListener("click", openMenu);
+  channelMenu.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { select(b.dataset.channel); closeMenu(); }));
+  document.addEventListener("mock-button", ({ detail }) => {
+    if (detail === "B" && channelMenu.classList.contains("is-open")) closeMenu();
+    if (detail === "X" && !channelMenu.classList.contains("is-open")) select(selected === "stable" ? "nightly" : "stable");
+  });
+  // Quick launch tiles and the dropdown share one selection: focusing a tile selects that channel.
+  document.addEventListener("mock-focus", ({ detail: el }) => {
+    if (el.classList.contains("tile") && el.dataset.channel) select(el.dataset.channel);
+    updateHints(el);
+  });
+
+  renderChrome("Home", null, ["Home", "Library", "Settings"]);
+  paintCovers();
+  let nav = null;
+  render();
+  nav = enableNav({ initial: "#play" });
+  if (params.has("menu")) openMenu();
+  updateHints();
+</script>
+</body>
+</html>

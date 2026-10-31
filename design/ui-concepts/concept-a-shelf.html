@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Concept A · Shelf</title>
+<link rel="stylesheet" href="./shared.css">
+<style>
+  .hero { position: absolute; inset: 0; }
+  .hero .art { position: absolute; inset: 0; transition: background-image 200ms; }
+  .hero::after {
+    content: ""; position: absolute; inset: 0;
+    background:
+      linear-gradient(90deg, rgba(12,8,9,.92) 0%, rgba(12,8,9,.55) 38%, rgba(12,8,9,0) 65%),
+      linear-gradient(0deg, rgba(12,8,9,1) 0%, rgba(12,8,9,.65) 30%, rgba(12,8,9,0) 55%),
+      linear-gradient(180deg, rgba(12,8,9,.75) 0%, rgba(12,8,9,0) 18%);
+  }
+  .info { position: absolute; left: 96px; top: 168px; width: 1000px; z-index: 3; }
+  .info .chips { display: flex; gap: 12px; margin-bottom: 22px; }
+  .info h1 { font-size: 84px; line-height: 0.95; font-weight: 800; letter-spacing: -0.04em; text-shadow: 0 6px 30px rgba(0,0,0,.5); }
+  .info p { margin-top: 20px; font-size: 26px; color: var(--muted); }
+  .actions { display: flex; gap: 20px; margin-top: 34px; }
+
+  .shelf { position: absolute; left: 96px; right: 0; bottom: 104px; z-index: 3; }
+  .shelf h2 { font-size: 24px; font-weight: 700; color: var(--muted); margin-bottom: 20px; }
+  .row { display: flex; gap: 28px; }
+  .tile { flex: none; width: 250px; text-align: left; }
+  .tile .thumb { height: 250px; border-radius: 24px; position: relative; overflow: hidden; background-color: var(--surface); }
+  .tile .thumb .badge { position: absolute; left: 14px; top: 14px; }
+  .tile .label { margin-top: 16px; font-size: 22px; font-weight: 700; opacity: 0; transform: translateY(-6px); transition: 140ms; }
+  .tile .label small { display: block; font-size: 18px; font-weight: 500; color: var(--muted); margin-top: 4px; }
+  .tile.is-focused { box-shadow: none; }
+  .tile.is-focused .thumb { box-shadow: var(--focus-ring); }
+  .tile.is-focused .label { opacity: 1; transform: none; }
+  .tile.new .thumb { display: grid; place-items: center; background: rgba(255,255,255,.06); border: 3px dashed rgba(255,255,255,.18); }
+  .tile.new .thumb span { font-size: 80px; font-weight: 300; color: var(--muted); }
+
+  /* Context menu (Y button) shown open for the screenshot */
+  .ctx {
+    position: absolute; z-index: 20; left: 1040px; top: 250px; width: 440px; padding: 14px;
+    border-radius: 28px; background: rgba(28,19,23,.92); backdrop-filter: blur(24px);
+    border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,.6); display: none;
+  }
+  body.show-ctx .ctx { display: block; }
+  .ctx header { padding: 16px 18px 12px; font-size: 20px; color: var(--muted); font-weight: 600; }
+  .ctx button { display: flex; width: 100%; align-items: center; gap: 18px; height: 76px; padding: 0 22px; border-radius: 18px; font-size: 26px; font-weight: 600; text-align: left; }
+  .ctx button.is-focused { background: var(--text); color: #1a0e12; transform: none; box-shadow: none; }
+  .ctx hr { border: 0; border-top: 1px solid var(--line); margin: 8px 12px; }
+  .ctx .danger { color: #ff8fa3; }
+</style>
+</head>
+<body>
+  <section class="hero"><div class="art cover" id="heroArt" data-cover="4,meadow,96,54"></div></section>
+
+  <section class="info">
+    <div class="chips"><span class="chip ruby">Fabric</span><span class="chip">1.21.4</span><span class="chip">212 mods</span><span class="chip"><span class="dot"></span>Ready</span></div>
+    <h1 id="heroTitle">Fabulously Optimized</h1>
+    <p id="heroMeta">Last played 2 hours ago · 31 h total</p>
+    <div class="actions">
+      <button class="btn primary focusable" id="play"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>Play</button>
+      <button class="btn focusable"><span class="glyph">Y</span>Options</button>
+    </div>
+  </section>
+
+  <section class="shelf">
+    <h2>Your instances</h2>
+    <div class="row">
+      <button class="tile focusable" data-title="Fabulously Optimized" data-meta="Last played 2 hours ago · 31 h total" data-c="4,meadow,96,54"><div class="thumb cover" data-cover="4,meadow"></div><div class="label">Fabulously Optimized<small>Fabric 1.21.4</small></div></button>
+      <button class="tile focusable" data-title="Survival World" data-meta="Last played yesterday · 112 h total" data-c="9,ruby,96,54"><div class="thumb cover" data-cover="9,ruby"></div><div class="label">Survival World<small>Vanilla 1.21.1</small></div></button>
+      <button class="tile focusable" data-title="Cobblemon Official" data-meta="Not installed yet · Play will download 1.4 GB" data-c="21,desert,96,54"><div class="thumb cover" data-cover="21,desert"><span class="chip badge"><span class="dot warn"></span>Not installed</span></div><div class="label">Cobblemon Official<small>Fabric 1.21.1</small></div></button>
+      <button class="tile focusable" data-title="Snow Hardcore" data-meta="Last played 3 weeks ago · 6 h total" data-c="33,frost,96,54"><div class="thumb cover" data-cover="33,frost"></div><div class="label">Snow Hardcore<small>Vanilla 1.20.6</small></div></button>
+      <button class="tile focusable" data-title="Better Nether" data-meta="Last played 2 months ago · 14 h total" data-c="12,nether,96,54"><div class="thumb cover" data-cover="12,nether"></div><div class="label">Better Nether<small>Quilt 1.21.1</small></div></button>
+      <button class="tile new focusable"><div class="thumb"><span>+</span></div><div class="label">New instance<small>Vanilla or modpack</small></div></button>
+    </div>
+  </section>
+
+  <div class="ctx focus-trap" id="ctx">
+    <header>Fabulously Optimized</header>
+    <button class="focusable">Edit profile</button>
+    <button class="focusable">Repair files</button>
+    <button class="focusable">Open game folder</button>
+    <button class="focusable">View mods</button>
+    <hr>
+    <button class="focusable danger">Remove instance…</button>
+  </div>
+
+<script type="module">
+  import { paintCovers, enableNav, renderChrome } from "./shared.js";
+  renderChrome("Home", [["A", "Play"], ["Y", "Options"], ["B", "Back"], ["☰", "Menu", "wide"]]);
+  paintCovers();
+  const params = new URLSearchParams(location.search);
+  if (params.has("menu")) { document.body.classList.add("show-ctx"); ctx.classList.add("is-open"); }
+  const nav = enableNav({ initial: params.has("menu") ? ".ctx button" : ".tile" });
+  // Hero follows whichever tile has focus, like a console dashboard.
+  document.addEventListener("mock-focus", ({ detail: el }) => {
+    if (!el.dataset.title) return;
+    heroTitle.textContent = el.dataset.title;
+    heroMeta.textContent = el.dataset.meta;
+    heroArt.dataset.cover = el.dataset.c;
+    paintCovers(document.querySelector(".hero"));
+  });
+</script>
+</body>
+</html>

@@ -1,10 +1,45 @@
 # Ruby Launcher
 
-**Build:** b2026.22  
-**Application version:** 0.22.0  
+**Build:** b2026.23  
+**Application version:** 0.23.0  
 **Author:** QTech Studios
 
-Ruby Launcher is a controller-first Minecraft Java launcher built with Tauri 2, Rust and JavaScript. It handles Microsoft authentication, Vanilla installation, managed Java runtimes and launching Minecraft without requiring the user to configure Java manually.
+Ruby Launcher is a controller-first games launcher built with Tauri 2, Rust and JavaScript. Its featured game is **Minecraft: Ruby Edition**, a Rust recreation of Minecraft: Java Edition, with Stable and Nightly channels installed side by side. It handles Microsoft authentication, downloads and verification, preparing game files from the player's own copy of Minecraft, and launching, in either a fullscreen Controller mode or a windowed Desktop mode.
+
+## b2026.23 milestone
+
+This build makes Minecraft: Ruby Edition the focus of the launcher and adds Controller and Desktop interface modes.
+
+### Ruby Edition on Home
+
+- Play button with a **Ruby Edition — Stable / Nightly** dropdown. The selected channel decides what launches.
+- Play turns into Install, Installing, Update or Check again depending on that channel's state, with step-by-step progress.
+- Quick Launch shelf for both channels, a build info card, and an Options menu (Y) for folders, reinstall, uninstall and the GitHub release page.
+
+### How installs work
+
+| Step | What happens |
+| --- | --- |
+| Find | Newest `ruby-edition-main-*` (Stable) and `ruby-edition-nightly-*` (Nightly) GitHub releases with a package for this platform |
+| Download | `ruby-edition-windows-x64.zip` or `ruby-edition-linux-x86_64.zip` |
+| Verify | SHA-256 checked against the release's `SHA256SUMS`; releases without it are refused |
+| Extract | Into a staging folder; the current build keeps working until the new one is ready |
+| Prepare | Ruby Launcher installs the signed-in owner's Minecraft client and server jar for the version Ruby Edition pins, gets a Java runtime, then runs `horizon-prepare` |
+| Launch | `horizon-client --resources … --game-dir … --home … --session-stdin` |
+
+Each channel lives in `<app data>/games/ruby-edition/<stable|nightly>/` with its own `bin/` (game build), `game/` (worlds, options) and `home/` (logs, crash reports). Updates replace only `bin/`.
+
+The Ruby Edition packaging workflow has not had a successful run yet, so until it publishes a release the launcher shows "No build published yet" for both channels.
+
+### Interface modes
+
+- **Controller mode:** fullscreen, console-style, LB/RB tabs, contextual button hints. The whole interface scales with the screen.
+- **Desktop mode:** a normal window with a compact, mouse-friendly layout, hover states and right-click menus.
+- Switch in **Settings → Interface mode**; it applies immediately. The connect-a-controller screen also offers a Desktop mode button.
+
+### Java Edition
+
+Java Edition profiles, the version catalog and Modrinth modpacks are still in the code but hidden while Ruby Edition is the focus. Set `JAVA_EDITION_UI = true` in `src-web/app.js` to show their tabs again.
 
 ## b2026.22 milestone
 

@@ -1,0 +1,88 @@
+/* Shared tokens + chrome for the Ruby Launcher UI concepts.
+   Everything is sized for a 1920x1080 TV viewed from a couch. */
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, sans-serif;
+  --bg: #0c0809;
+  --surface: #181114;
+  --surface-2: #22181c;
+  --line: rgba(255, 255, 255, 0.09);
+  --text: #f8f1f3;
+  --muted: #b9abb0;
+  --subtle: #85767c;
+  --ruby: #d52b56;
+  --ruby-bright: #ff5479;
+  --ruby-deep: #6e1029;
+  --ok: #6fd39b;
+  --warn: #f0c062;
+  --focus-ring: 0 0 0 4px var(--bg), 0 0 0 8px var(--ruby-bright), 0 18px 50px rgba(255, 64, 110, 0.28);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--text); }
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+h1, h2, h3, p { margin: 0; }
+svg { display: block; }
+
+/* ---------- Focus: one loud, consistent style everywhere ---------- */
+.focusable { outline: none; transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease; }
+.focusable.is-focused { box-shadow: var(--focus-ring); transform: scale(1.04); z-index: 2; }
+.focusable.is-pressed { transform: scale(0.97); }
+
+/* ---------- Top bar with LB/RB tabs ---------- */
+.topbar {
+  position: absolute; inset: 0 0 auto 0; height: 112px; z-index: 10;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 64px;
+}
+.topbar .brand { display: flex; align-items: center; gap: 14px; font-weight: 800; font-size: 26px; letter-spacing: -0.02em; }
+.topbar .brand img { width: 44px; height: 44px; }
+.tabs { display: flex; align-items: center; gap: 10px; }
+.tab { padding: 12px 26px; border-radius: 999px; font-size: 24px; font-weight: 600; color: var(--muted); }
+.tab.is-active { background: var(--text); color: #1a0e12; }
+.bumper {
+  display: grid; place-items: center; height: 36px; padding: 0 12px; border-radius: 10px;
+  border: 2px solid rgba(255,255,255,.22); font-size: 16px; font-weight: 800; color: var(--muted);
+}
+.status { display: flex; justify-content: flex-end; align-items: center; gap: 28px; font-size: 22px; color: var(--muted); }
+.status .account { display: flex; align-items: center; gap: 14px; color: var(--text); font-weight: 600; }
+.avatar {
+  width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; font-weight: 800;
+  background: linear-gradient(135deg, #3b9c5c, #1f5b36); image-rendering: pixelated;
+}
+.status .pad { display: flex; align-items: center; gap: 8px; }
+.status .pad svg { width: 34px; height: 34px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.battery { width: 30px; height: 14px; border: 2px solid currentColor; border-radius: 4px; position: relative; }
+.battery::after { content: ""; position: absolute; inset: 2px 8px 2px 2px; background: var(--ok); border-radius: 1px; }
+
+/* ---------- Contextual button hints (bottom right, console style) ---------- */
+.hints {
+  position: absolute; right: 64px; bottom: 40px; z-index: 10;
+  display: flex; gap: 34px; font-size: 22px; font-weight: 600; color: var(--muted);
+}
+.hints > span { display: flex; align-items: center; gap: 12px; }
+.glyph {
+  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 18px; font-weight: 800; color: #170c10; background: var(--text);
+}
+.glyph.wide { width: auto; padding: 0 12px; border-radius: 10px; }
+.glyph.dpad { background: none; color: var(--text); border: 2px solid rgba(255,255,255,.35); }
+
+/* ---------- Generic bits ---------- */
+.chip {
+  display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 999px;
+  background: rgba(255,255,255,.1); backdrop-filter: blur(10px); font-size: 19px; font-weight: 600; color: var(--text);
+}
+.chip.ruby { background: rgba(213, 43, 86, .25); color: #ffc2cf; }
+.chip .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); }
+.chip .dot.warn { background: var(--warn); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 14px;
+  height: 84px; padding: 0 40px; border-radius: 22px; font-size: 28px; font-weight: 700;
+  background: rgba(255,255,255,.1); backdrop-filter: blur(14px);
+}
+.btn.primary { background: linear-gradient(180deg, var(--ruby-bright), var(--ruby)); min-width: 300px; font-size: 32px; }
+.btn.primary svg { width: 30px; height: 30px; fill: currentColor; }
+.btn .glyph { width: 34px; height: 34px; font-size: 16px; }
+
+.cover { background-size: cover; background-position: center bottom; image-rendering: pixelated; }
